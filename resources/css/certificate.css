@@ -1,0 +1,96 @@
+body{
+    background: #dedede;
+    margin: 0;
+    padding: 0;
+}
+.logo{
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+.header-search{
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+}
+.header-search h3{
+    margin: 0;
+    font-weight: bold;
+    background: #6686addd;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    color: #fff;
+}
+.name-certificate{
+    text-align: center;
+}
+.description{
+    text-align: center;
+}
+.description dt{
+    padding: 1rem 0;
+}
+.panel-body{
+    padding: 4rem;
+}
+.icon{
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+td {
+    font-size: 18px;
+}
+.seals {
+    font-size: 16px;
+    text-align: center;
+}
+
+.logo-seals {
+    height: 100px;
+    text-align: center;
+    vertical-align: middle;
+}
+.code-cert{
+    text-transform: uppercase;
+}
+@page caraA {
+    height: 210mm;
+    margin: 0;
+    padding: 0;
+    page-break-before: always;
+}
+
+.caraA {
+    box-decoration-break: slice;
+    page: caraA
+}
+
+@page caraB {
+    background: #FFFFFF;
+}
+
+.caraB {
+    box-decoration-break: slice;
+    page: caraB
+}
+
+.contents-learnpath td {
+    background: #FFFFFF;
+    font-size: 12px;
+    height: 160mm;
+    vertical-align: top;
+}
+
+ol {
+    margin: 0;
+    padding: 0;
+}
+@media (max-width: 480px) {
+    .panel-body {
+        padding: 2rem;
+    }
+    .page-blank {
+        padding: 0 !important;
+    }
+}
