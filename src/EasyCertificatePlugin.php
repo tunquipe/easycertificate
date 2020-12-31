@@ -36,6 +36,8 @@ class EasyCertificatePlugin extends Plugin
             'Alex Aragón Calixto <br> Magaly Ancalle',
             [
                 'enable_plugin_easycertificate' => 'boolean',
+                'percentage' => 'boolean',
+                
             ]
         );
 
@@ -428,10 +430,14 @@ class EasyCertificatePlugin extends Plugin
         return $valueUserExtraField['value'];
     }
 
-    public static function getGenerateInfoCertificate($info, $codeCertificate = null)
+    public static function getGenerateInfoCertificate($info, $codeCertificate = null, $percentage = false)
     {
         $list   = [];
-
+        $percentageValue = "";
+        if ($percentage != 'false'){
+            $percentageValue = "%";
+        }
+        
         if($info === true)
         {
             $codeCertificate  = (string) $codeCertificate;
@@ -453,7 +459,7 @@ class EasyCertificatePlugin extends Plugin
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
-                        'scoreCertificate' => $row['score_certificate'],
+                        'scoreCertificate' => $row['score_certificate'].$percentageValue,
                         'codeCertificate' => md5($row['code_certificate'])
                     ];
                 }

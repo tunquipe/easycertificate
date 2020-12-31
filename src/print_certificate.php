@@ -253,6 +253,17 @@ foreach ($userList as $userInfo) {
         $myContentHtml
     );
 
+    $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
+    $codCertificate = $codeCertificate['code_certificate'];
+    if (!empty($codCertificate)) {
+        $myContentHtml = str_replace(
+            '((bar_code))',
+            '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">'
+            ,
+            $myContentHtml
+        );
+    }
+    
     $myContentHtml = strip_tags(
         $myContentHtml,
         '<p><b><strong><table><tr><td><th><tbody><span><i><li><ol><ul>

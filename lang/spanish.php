@@ -88,3 +88,4 @@ $strings['NoCertificate'] = "No se encontro un certificado válido.";
 $strings['CertificateFound'] = "Certificado válido.";
 $strings['RegisterOfGeneratedCertificates'] = "Validación de certificados";
 $strings['ErrorInTheRegisteredCertificate'] = "<strong>Nota:</strong> Si existe un error en los datos registrados, por favor comunicarse con la institución a cargo.";
+$strings['percentage'] = "Con porcentaje %";

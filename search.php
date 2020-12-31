@@ -11,11 +11,15 @@ $type = isset($_GET['type']) ? (int)$_GET['type'] : null;
 
 $plugin = EasyCertificatePlugin::create();
 $enable = $plugin->get('enable_plugin_easycertificate') == 'true';
+$percentage = $plugin->get('percentage');
+$percentageValue = "";
+
+
 $tblProperty = Database::get_course_table(TABLE_ITEM_PROPERTY);
 $content =[];
 if ($type == 'view') {
     $codCertificate = isset($_GET['c_cert']) ? (string)$_GET['c_cert'] : null;
-    $certificate_Validate = EasyCertificatePlugin::getGenerateInfoCertificate(true, $codCertificate);
+    $certificate_Validate = EasyCertificatePlugin::getGenerateInfoCertificate(true, $codCertificate, $plugin->get('percentage'));
     $template = new Template($plugin->get_lang('CertificateInformation'));
     $template->assign('certificate', $certificate_Validate);
     $content = $template->fetch('easycertificate/template/certificate_info.tpl');

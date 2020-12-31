@@ -330,7 +330,8 @@ $listTags = [
     'score_certificate',
     'simple_average_category',
     'simple_average',
-    'qr-code'
+    'qr-code',
+    'bar_code'
 ];
 
 $strInfo = '<ul class="list-tags">';
