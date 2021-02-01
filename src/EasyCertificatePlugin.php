@@ -391,7 +391,10 @@ class EasyCertificatePlugin extends Plugin
         foreach ($resultArray as $evaluation){
             $totalEvaluations += doubleval($evaluation['score']);
         }
-        $average = $totalEvaluations / $countEvaluations;
+        if (!empty($totalEvaluations)) {
+            $average = $totalEvaluations / $countEvaluations;
+        }
+        
         return number_format($average,1);
 
     }
@@ -455,12 +458,22 @@ class EasyCertificatePlugin extends Plugin
                     $row = Database::fetch_assoc($rs);
                     $userInfo = api_get_user_info($row['user_id'], false, false, true, true, false, true);
                     $courseInfo = api_get_course_info($row['course_code']);
+
+                    $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
+                    $codCertificate = $row['code_certificate'];
+                    $imgCodeBar = '';
+                   
+                    if (!empty($codCertificate)) {
+                        $imgCodeBar = '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">';
+                    }
+
                     $list   = [
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
                         'scoreCertificate' => $row['score_certificate'].$percentageValue,
-                        'codeCertificate' => md5($row['code_certificate'])
+                        'codeCertificate' => md5($row['code_certificate']),
+                        'urlBarCode' => $imgCodeBar,
                     ];
                 }
             }
