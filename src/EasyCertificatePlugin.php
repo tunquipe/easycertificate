@@ -37,7 +37,7 @@ class EasyCertificatePlugin extends Plugin
             [
                 'enable_plugin_easycertificate' => 'boolean',
                 'percentage' => 'boolean',
-                
+
             ]
         );
 
@@ -394,7 +394,7 @@ class EasyCertificatePlugin extends Plugin
         if (!empty($totalEvaluations)) {
             $average = $totalEvaluations / $countEvaluations;
         }
-        
+
         return number_format($average,1);
 
     }
@@ -440,7 +440,7 @@ class EasyCertificatePlugin extends Plugin
         if ($percentage != 'false'){
             $percentageValue = "%";
         }
-        
+
         if($info === true)
         {
             $codeCertificate  = (string) $codeCertificate;
@@ -462,11 +462,14 @@ class EasyCertificatePlugin extends Plugin
                     $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
                     $codCertificate = $row['code_certificate'];
                     $imgCodeBar = '';
-                   
+
                     if (!empty($codCertificate)) {
                         $imgCodeBar = '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">';
                     }
 
+                    //simple average with category
+                    $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0);
+                    $row['score_certificate'] = $simpleAverageNotCategory;
                     $list   = [
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
                         'courseName' => $courseInfo['name'],
