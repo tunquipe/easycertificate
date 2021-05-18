@@ -469,12 +469,12 @@ class EasyCertificatePlugin extends Plugin
 
                     //simple average with category
                     $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0);
-                    $row['score_certificate'] = $simpleAverageNotCategory;
+                  
                     $list   = [
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
-                        'scoreCertificate' => $row['score_certificate'].$percentageValue,
+                        'scoreCertificate' => $row['score_certificate'].$percentageValue.'<br>'.$simpleAverageNotCategory,
                         'codeCertificate' => md5($row['code_certificate']),
                         'urlBarCode' => $imgCodeBar,
                     ];
