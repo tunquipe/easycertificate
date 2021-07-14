@@ -368,7 +368,7 @@ class EasyCertificatePlugin extends Plugin
         $tableGradeBookEvaluation = Database::get_main_table(TABLE_MAIN_GRADEBOOK_EVALUATION);
         $tableGradeBookResult = Database::get_main_table(TABLE_MAIN_GRADEBOOK_RESULT);
 
-        $sql = "SELECT gc.id, gc.name_session as category, gc.session_id, gc.course_code, ge.name, gr.score, gc.visible FROM $tableGradeBookCategory gc
+        $sql = "SELECT gc.id, gc.name as category, gc.session_id, gc.course_code, ge.name, gr.score, gc.visible FROM $tableGradeBookCategory gc
                 INNER JOIN $tableGradeBookEvaluation ge ON gc.id = ge.category_id
                 INNER JOIN $tableGradeBookResult gr ON gr.evaluation_id = ge.id
                 WHERE gc.visible = $type AND gc.course_code='$codeCourse' AND gr.user_id = $userID AND gc.session_id = $sessionId";
@@ -381,7 +381,6 @@ class EasyCertificatePlugin extends Plugin
                 $resultArray[] = [
                     'id' => $row['id'],
                     'category' => $row['category'],
-                    'session' => $row['name_session'],
                     'name' => $row['name'],
                     'score' => $row['score']
                 ];
