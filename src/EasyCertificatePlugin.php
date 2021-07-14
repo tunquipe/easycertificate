@@ -382,7 +382,7 @@ class EasyCertificatePlugin extends Plugin
                     'id' => $row['id'],
                     'category' => $row['category'],
                     'session' => $row['name_session'],
-                    'name' => $row['name_session'],
+                    'name' => $row['name'],
                     'score' => $row['score']
                 ];
             }
