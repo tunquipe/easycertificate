@@ -156,7 +156,7 @@ foreach ($userList as $userInfo) {
     );
 
     //simple average with category
-    $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 0);
+    $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 0, $sessionId);
 
     $myContentHtml = str_replace(
         '((simple_average))',
@@ -165,13 +165,15 @@ foreach ($userList as $userInfo) {
     );
 
     //simple average with category
-    $simpleAverageCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 1);
+    $simpleAverageCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 1, $sessionId);
 
     $myContentHtml = str_replace(
         '((simple_average_category))',
         $simpleAverageCategory,
         $myContentHtml
     );
+
+    exit;
 
     //ExtraField
     $extraFieldsAll = EasyCertificatePlugin::getExtraFieldsUserAll(false);
@@ -263,7 +265,7 @@ foreach ($userList as $userInfo) {
             $myContentHtml
         );
     }
-    
+
     $myContentHtml = strip_tags(
         $myContentHtml,
         '<p><b><strong><table><tr><td><th><tbody><span><i><li><ol><ul>
