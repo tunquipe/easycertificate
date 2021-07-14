@@ -449,7 +449,7 @@ class EasyCertificatePlugin extends Plugin
                 $certificateTable = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CERTIFICATE);
                 $categoryTable = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CATEGORY);
                 $sql = "SELECT cer.id as id_certificate, CONCAT(cer.id,'-',cer.cat_id,'-',cer.user_id) as code_certificate,
-                    cer.score_certificate, cer.cat_id,cer.user_id, DATE_FORMAT(cer.created_at, '%Y-%m-%d') as created_at, cat.weight,cat.course_code
+                    cer.score_certificate, cer.cat_id,cer.user_id, DATE_FORMAT(cer.created_at, '%Y-%m-%d') as created_at, cat.weight,cat.course_code, cat.session_id
                     FROM $certificateTable cer
                     INNER JOIN $categoryTable cat
                     ON (cer.cat_id = cat.id)
@@ -469,7 +469,7 @@ class EasyCertificatePlugin extends Plugin
                     }
 
                     //simple average with category
-                    $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0);
+                    $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0, $row['session_id']);
 
                     $list   = [
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
