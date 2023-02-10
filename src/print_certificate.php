@@ -13,6 +13,8 @@ if ($default === 1) {
 
 $course_plugin = 'easycertificate';
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../resources/vendor/php-barcode-generator/src/BarcodeGenerator.php';
+require_once __DIR__ . '/../resources/vendor/php-barcode-generator/src/BarcodeGeneratorPNG.php';
 
 api_block_anonymous_users();
 $plugin = EasyCertificatePlugin::create();
@@ -174,13 +176,15 @@ foreach ($userList as $userInfo) {
 
     //ExtraField
     $extraFieldsAll = EasyCertificatePlugin::getExtraFieldsUserAll(false);
-    foreach ($extraFieldsAll as $field) {
-        $valueExtraField = EasyCertificatePlugin::getValueExtraField($field, $studentId);
-        $myContentHtml = str_replace(
-            '(('.$field.'))',
-            $valueExtraField,
-            $myContentHtml
-        );
+    if($extraFieldsAll){
+        foreach ($extraFieldsAll as $field) {
+            $valueExtraField = EasyCertificatePlugin::getValueExtraField($field, $studentId);
+            $myContentHtml = str_replace(
+                '(('.$field.'))',
+                $valueExtraField,
+                $myContentHtml
+            );
+        }
     }
 
     //Session Date.
@@ -227,6 +231,7 @@ foreach ($userList as $userInfo) {
         $catId,
         $studentId
     );
+    $createdAt = '';
     if (!empty($myCertificate['created_at'])) {
         $createdAt = strtotime(api_get_local_time($myCertificate['created_at']));
         $createdAt = api_format_date($createdAt, DATE_FORMAT_LONG_NO_DAY);
@@ -238,19 +243,20 @@ foreach ($userList as $userInfo) {
     );
 
     $codeCertificate = EasyCertificatePlugin::getCodeCertificate($catId,$studentId);
-    $myContentHtml = str_replace(
-        '((code_certificate))',
-        strtoupper($codeCertificate['code_certificate_md5']),
-        $myContentHtml
-    );
-
-    $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $catId, $codeCertificate['code_certificate_md5']);
-    $myContentHtml = str_replace(
-        '((qr-code))',
-        '<img src="data:image/png;base64,'.$certificateQR.'">'
-        ,
-        $myContentHtml
-    );
+    if(!empty($codeCertificate)){
+        $myContentHtml = str_replace(
+            '((code_certificate))',
+            strtoupper($codeCertificate['code_certificate_md5']),
+            $myContentHtml
+        );
+        $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $catId, $codeCertificate['code_certificate_md5']);
+        $myContentHtml = str_replace(
+            '((qr-code))',
+            '<img src="data:image/png;base64,'.$certificateQR.'">'
+            ,
+            $myContentHtml
+        );
+    }
 
     $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
     $codCertificate = $codeCertificate['code_certificate'];

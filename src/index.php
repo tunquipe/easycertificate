@@ -34,8 +34,8 @@ if ($isDefault === 1) {
     $courseId = api_get_course_int_id();
     $courseCode = api_get_course_id();
     $sessionId = api_get_session_id();
-    $enableCourse = api_get_course_setting('easycertificate_course_enable', $course_info) == 1 ? true : false;
-    $useDefault = api_get_course_setting('use_certificate_default', $course_info) == 1 ? true : false;
+    $enableCourse = api_get_course_setting('easycertificate_course_enable', $course_info) == 1;
+    $useDefault = api_get_course_setting('use_certificate_default', $course_info) == 1;
     $defaultCertificate = 0;
     $urlParams = '?'.api_get_cidreq();
 }
@@ -44,7 +44,7 @@ if ($sessionId > 0) {
     $sessionInfo = SessionManager::fetch($sessionId);
     var_dump($sessionInfo);
 }*/
-$message = null;
+
 if (!$enable) {
     api_not_allowed(true, $plugin->get_lang('ToolDisabled'));
 }
@@ -106,9 +106,10 @@ $form = new FormValidator(
     api_get_self().$urlParams,
     null
 );
-
+$contentFront = null;
 if ($form->validate()) {
     $formValues = $form->getSubmitValues();
+
     if (empty($formValues['front_content'])) {
         $contentsFront = '';
     } else {
@@ -122,6 +123,12 @@ if ($form->validate()) {
     }
 
     $check = Security::check_token('post');
+
+    $showBack = 0;
+    if (isset($formValues['show_back'])) {
+        $showBack = 1;
+    }
+
     if ($check) {
         $params = [
             'access_url_id' => api_get_current_access_url_id(),
@@ -135,7 +142,7 @@ if ($form->validate()) {
             'margin_top' => (int) $formValues['margin_top'],
             'margin_bottom' => (int) $formValues['margin_bottom'],
             'certificate_default' => 0,
-            'show_back' => (int) $formValues['show_back'],
+            'show_back' => $showBack,
             'date_change' => (int) $formValues['date_change']
         ];
 
@@ -214,9 +221,9 @@ if (empty($infoCertificate)) {
 
 // Display the header
 $tpl = new Template($nameTools,true,true,false,false,true,false);
-
+$iconCertificate = api_get_path(WEB_PLUGIN_PATH).'easycertificate/resources/img/easycertificate.png';
 $actionsLeft = Display::url(
-    Display::return_icon('easycertificate.png', get_lang('Certificate'), '', ICON_SIZE_MEDIUM),
+    Display::tag('img',null, ['src'=>$iconCertificate]),
     'print_certificate.php'.$urlParams
 );
 if (!empty($courseId) && !$useDefault) {
@@ -384,6 +391,7 @@ $form->addRadio(
     'date_change',
     $plugin->get_lang('DateSession'),
     [
+        '2' => $plugin->get_lang('None'),
         '0' => $plugin->get_lang('UseDateViewSession'),
         '1' => $plugin->get_lang('UseDateAccessSession')
     ]
@@ -444,19 +452,23 @@ $form->addNumeric(
 $form->addHtml('</div><div class="col-md-6">');
 
 // background 297/210
-$form->addFile(
-    'background_h',
-    [
-        $plugin->get_lang('BackgroundHorizontal'),
-        $plugin->get_lang('BackgroundHorizontalHelp')
-    ],
-    [
-        'id' => 'background_h',
-        'class' => 'picture-form',
-        'crop_image' => true,
-        'crop_ratio' => '297 / 210',
-    ]
-);
+try {
+    $form->addFile(
+        'background_h',
+        [
+            $plugin->get_lang('BackgroundHorizontal'),
+            $plugin->get_lang('BackgroundHorizontalHelp')
+        ],
+        [
+            'id' => 'background_h',
+            'class' => 'picture-form',
+            'crop_image' => true,
+            'crop_ratio' => '297 / 210',
+        ]
+    );
+} catch (Exception $e) {
+    error_log($e);
+}
 
 if (!empty($infoCertificate['background_h'])) {
     $form->addElement('checkbox', 'remove_background_h', null, $plugin->get_lang('DelImage'));
@@ -464,19 +476,23 @@ if (!empty($infoCertificate['background_h'])) {
         <div class="col-sm-10"><img src="'.$path.$infoCertificate['background_h'].'" width="100"  /></div></div>');
 }
 
-$form->addFile(
-    'background_v',
-    [
-        $plugin->get_lang('BackgroundVertical'),
-        $plugin->get_lang('BackgroundVerticalHelp')
-    ],
-    [
-        'id' => 'background_v',
-        'class' => 'picture-form',
-        'crop_image' => true,
-        'crop_ratio' => '210 / 297',
-    ]
-);
+try {
+    $form->addFile(
+        'background_v',
+        [
+            $plugin->get_lang('BackgroundVertical'),
+            $plugin->get_lang('BackgroundVerticalHelp')
+        ],
+        [
+            'id' => 'background_v',
+            'class' => 'picture-form',
+            'crop_image' => true,
+            'crop_ratio' => '210 / 297',
+        ]
+    );
+} catch (Exception $e) {
+    error_log($e);
+}
 
 if (!empty($infoCertificate['background_v'])) {
     $form->addElement('checkbox', 'remove_background_v', null, $plugin->get_lang('DelImage'));
@@ -488,19 +504,22 @@ $form->addProgress();
 
 $allowedPictureTypes = api_get_supported_image_extensions(false);
 
-$form->addRule(
-    'background_h',
-    get_lang('OnlyImagesAllowed').' ('.implode(', ', $allowedPictureTypes).')',
-    'filetype',
-    $allowedPictureTypes
-);
-$form->addRule(
-    'background_v',
-    get_lang('OnlyImagesAllowed').' ('.implode(', ', $allowedPictureTypes).')',
-    'filetype',
-    $allowedPictureTypes
-);
-
+try {
+    $form->addRule(
+        'background_h',
+        get_lang('OnlyImagesAllowed') . ' (' . implode(', ', $allowedPictureTypes) . ')',
+        'filetype',
+        $allowedPictureTypes
+    );
+    $form->addRule(
+        'background_v',
+        get_lang('OnlyImagesAllowed').' ('.implode(', ', $allowedPictureTypes).')',
+        'filetype',
+        $allowedPictureTypes
+    );
+} catch (Exception $e) {
+    error_log($e);
+}
 
 $form->addHtml('</div></div>');
 $form->addButton(
@@ -516,23 +535,42 @@ $form->addButton(
 );
 
 $form->addElement('hidden', 'formSent');
-$infoCertificate['formSent'] = 1;
-$form->setDefaults($infoCertificate);
+$valuesDefaults = [
+    'formSent' => 1,
+    'front_content' => $infoCertificate['front_content'],
+    'back_content' => $infoCertificate['back_content'],
+    'show_back' => $infoCertificate['show_back'],
+    'orientation' => $infoCertificate['orientation'],
+    'date_change' => $infoCertificate['date_change'],
+    'margin_left' => $infoCertificate['margin_left'],
+    'margin_right' => $infoCertificate['margin_right'],
+    'margin_top' => $infoCertificate['margin_top'],
+    'margin_bottom' => $infoCertificate['margin_bottom'],
+];
 $token = Security::get_token();
-$form->addElement('hidden', 'sec_token');
-$form->addElement('hidden', 'use_default');
-$form->addElement('hidden', 'default_certificate');
-$form->addElement('hidden', 'c_id');
-$form->addElement('hidden', 'session_id');
-$form->setConstants(
-    [
-        'sec_token' => $token,
-        'use_default' => $useDefault,
-        'default_certificate' => $defaultCertificate,
-        'c_id' => $courseId,
-        'session_id' => $sessionId,
-    ]
-);
+try {
+    $form->setDefaults($valuesDefaults);
+    $form->addElement('hidden', 'sec_token');
+    $form->addElement('hidden', 'use_default');
+    $form->addElement('hidden', 'default_certificate');
+    $form->addElement('hidden', 'c_id');
+    $form->addElement('hidden', 'session_id');
+} catch (Exception $e) {
+    error_log($e);
+}
+try {
+    $form->setConstants(
+        [
+            'sec_token' => $token,
+            'use_default' => $useDefault,
+            'default_certificate' => $defaultCertificate,
+            'c_id' => $courseId,
+            'session_id' => $sessionId,
+        ]
+    );
+} catch (Exception $e) {
+    error_log($e);
+}
 $tpl->assign('actions', $actions);
 $tpl->assign('message', $message);
 $tpl->assign('form', $form->returnForm());

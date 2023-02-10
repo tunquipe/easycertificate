@@ -323,7 +323,26 @@ class EasyCertificatePlugin extends Plugin
         $result = Database::query($sql);
         $resultArray = [];
         if (Database::num_rows($result) > 0) {
-            $resultArray = Database::fetch_array($result);
+            while ($row = Database::fetch_array($result)) {
+                $resultArray = [
+                    'id' => $row['id'],
+                    'access_url_id' => $row['access_url_id'],
+                    'session_id' => $row['session_id'],
+                    'c_id' => $row['c_id'],
+                    'front_content' => $row['front_content'],
+                    'back_content' => $row['back_content'],
+                    'background_h' => $row['background_h'],
+                    'background_v' => $row['background_v'],
+                    'orientation' => $row['orientation'],
+                    'margin_left' => $row['margin_left'],
+                    'margin_right' => $row['margin_right'],
+                    'margin_top' => $row['margin_top'],
+                    'margin_bottom' => $row['margin_bottom'],
+                    'certificate_default' => $row['certificate_default'],
+                    'show_back' => $row['show_back'],
+                    'date_change' => $row['date_change'],
+                ];
+            }
         }
 
         return $resultArray;
