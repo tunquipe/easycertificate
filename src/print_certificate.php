@@ -20,7 +20,7 @@ api_block_anonymous_users();
 $plugin = EasyCertificatePlugin::create();
 $enable = $plugin->get('enable_plugin_easycertificate') == 'true';
 $tblProperty = Database::get_course_table(TABLE_ITEM_PROPERTY);
-$content =[];
+$content = [];
 
 if (!$enable) {
     api_not_allowed(true, $plugin->get_lang('ToolDisabled'));
@@ -176,11 +176,11 @@ foreach ($userList as $userInfo) {
 
     //ExtraField
     $extraFieldsAll = EasyCertificatePlugin::getExtraFieldsUserAll(false);
-    if($extraFieldsAll){
+    if ($extraFieldsAll) {
         foreach ($extraFieldsAll as $field) {
             $valueExtraField = EasyCertificatePlugin::getValueExtraField($field, $studentId);
             $myContentHtml = str_replace(
-                '(('.$field.'))',
+                '((' . $field . '))',
                 $valueExtraField,
                 $myContentHtml
             );
@@ -242,8 +242,8 @@ foreach ($userList as $userInfo) {
         $myContentHtml
     );
 
-    $codeCertificate = EasyCertificatePlugin::getCodeCertificate($catId,$studentId);
-    if(!empty($codeCertificate)){
+    $codeCertificate = EasyCertificatePlugin::getCodeCertificate($catId, $studentId);
+    if (!empty($codeCertificate)) {
         $myContentHtml = str_replace(
             '((code_certificate))',
             strtoupper($codeCertificate['code_certificate_md5']),
@@ -252,21 +252,21 @@ foreach ($userList as $userInfo) {
         $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $catId, $codeCertificate['code_certificate_md5']);
         $myContentHtml = str_replace(
             '((qr-code))',
-            '<img src="data:image/png;base64,'.$certificateQR.'">'
+            '<img src="data:image/png;base64,' . $certificateQR . '">'
             ,
             $myContentHtml
         );
-    }
 
-    $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
-    $codCertificate = $codeCertificate['code_certificate'];
-    if (!empty($codCertificate)) {
-        $myContentHtml = str_replace(
-            '((bar_code))',
-            '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">'
-            ,
-            $myContentHtml
-        );
+        $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
+        $codCertificate = $codeCertificate['code_certificate'];
+        if (!empty($codCertificate)) {
+            $myContentHtml = str_replace(
+                '((bar_code))',
+                '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">'
+                ,
+                $myContentHtml
+            );
+        }
     }
 
     $myContentHtml = strip_tags(
@@ -278,16 +278,16 @@ foreach ($userList as $userInfo) {
     $orientation = $infoCertificate['orientation'];
     $format = 'A4-L';
     $pageOrientation = 'L';
-    if($orientation != 'h'){
+    if ($orientation != 'h') {
         $format = 'A4';
         $pageOrientation = 'P';
     }
 
-    $marginLeft = ($infoCertificate['margin_left'] > 0) ? $infoCertificate['margin_left'].'cm' : 0;
-    $marginRight = ($infoCertificate['margin_right'] > 0) ? $infoCertificate['margin_right'].'cm' : 0;
-    $marginTop = ($infoCertificate['margin_top'] > 0) ? $infoCertificate['margin_top'].'cm' : 0;
-    $marginBottom = ($infoCertificate['margin_bottom'] > 0) ? $infoCertificate['margin_bottom'].'cm' : 0;
-    $margin = $marginTop.' '.$marginRight.' '.$marginBottom.' '.$marginLeft;
+    $marginLeft = ($infoCertificate['margin_left'] > 0) ? $infoCertificate['margin_left'] . 'cm' : 0;
+    $marginRight = ($infoCertificate['margin_right'] > 0) ? $infoCertificate['margin_right'] . 'cm' : 0;
+    $marginTop = ($infoCertificate['margin_top'] > 0) ? $infoCertificate['margin_top'] . 'cm' : 0;
+    $marginBottom = ($infoCertificate['margin_bottom'] > 0) ? $infoCertificate['margin_bottom'] . 'cm' : 0;
+    $margin = $marginTop . ' ' . $marginRight . ' ' . $marginBottom . ' ' . $marginLeft;
 
     $templateName = $plugin->get_lang('ExportCertificate');
     $template = new Template($templateName);
