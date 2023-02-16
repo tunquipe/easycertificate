@@ -1,8 +1,6 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use Chamilo\CourseBundle\Entity\CLpCategory;
-
 $default = isset($_GET['default']) ? (int)$_GET['default'] : null;
 $type = isset($_GET['type']) ? (int)$_GET['type'] : null;
 
@@ -13,8 +11,6 @@ if ($default === 1) {
 
 $course_plugin = 'easycertificate';
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../resources/vendor/php-barcode-generator/src/BarcodeGenerator.php';
-require_once __DIR__ . '/../resources/vendor/php-barcode-generator/src/BarcodeGeneratorPNG.php';
 
 api_block_anonymous_users();
 $plugin = EasyCertificatePlugin::create();

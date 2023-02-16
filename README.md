@@ -20,6 +20,17 @@ en un curso se debe entrar en la configuración del curso y habilitar en la pest
 casilla de verificación de "Habilitar en el curso el certificado alternativo".
 Si se desea usar el certificado por defecto se deberá mostrar la segunda casilla de verificación.
 
+Requisito minimos para instalacion
+-------
+Instalar a través de [ compositor ](https://getcomposer.org/doc/00-intro.md):
+
+```
+composer require picqer/php-barcode-generator
+```
+
+Si desea generar imágenes PNG o JPG, también necesita la biblioteca GD o Imagick instalada en su sistema.
+
+
 
 Creditos
 -------
