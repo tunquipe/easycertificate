@@ -249,8 +249,21 @@ if ($useDefault && $courseId > 0) {
 $form->addHeader($plugin->get_lang('FrontContentCertificate'));
 
 $dir = '/';
-$courseInfo = api_get_course_info();
+$courseInfo = [
+
+];
+if(api_get_course_info()){
+    $courseInfo = api_get_course_info();
+}
+
 $isAllowedToEdit = api_is_allowed_to_edit(null, true);
+
+$pathCourse = null;
+$baseHref = null;
+if ($isDefault !== 1) {
+    $pathCourse = api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/';
+    $baseHref = api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document'.$dir;
+}
 
 $editorConfigOne = [
     'ToolbarSet' => $isAllowedToEdit ? 'Documents' : 'DocumentsStudent',
@@ -259,9 +272,9 @@ $editorConfigOne = [
     'cols-size' => [0, 12, 0],
     'FullPage' => true,
     'InDocument' => true,
-    'CreateDocumentDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'CreateDocumentWebDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'BaseHref' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document'.$dir,
+    'CreateDocumentDir' => $pathCourse,
+    'CreateDocumentWebDir' => $pathCourse,
+    'BaseHref' => $baseHref,
 ];
 
 $html = '
@@ -302,9 +315,9 @@ $editorConfigTwo = [
     'cols-size' => [0, 12, 0],
     'FullPage' => true,
     'InDocument' => true,
-    'CreateDocumentDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'CreateDocumentWebDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'BaseHref' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document'.$dir,
+    'CreateDocumentDir' => $pathCourse,
+    'CreateDocumentWebDir' => $pathCourse,
+    'BaseHref' => $baseHref,
 ];
 $form->addHtmlEditor(
     'back_content',
@@ -534,22 +547,44 @@ $form->addButton(
     ]
 );
 
-$form->addElement('hidden', 'formSent');
-$valuesDefaults = [
-    'formSent' => 1,
-    'front_content' => $infoCertificate['front_content'],
-    'back_content' => $infoCertificate['back_content'],
-    'show_back' => $infoCertificate['show_back'],
-    'orientation' => $infoCertificate['orientation'],
-    'date_change' => $infoCertificate['date_change'],
-    'margin_left' => $infoCertificate['margin_left'],
-    'margin_right' => $infoCertificate['margin_right'],
-    'margin_top' => $infoCertificate['margin_top'],
-    'margin_bottom' => $infoCertificate['margin_bottom'],
-];
 $token = Security::get_token();
+
+if(!empty($infoCertificate)){
+    $valuesDefaults = [
+        'formSent' => 1,
+        'front_content' => $infoCertificate['front_content'],
+        'back_content' => $infoCertificate['back_content'],
+        'show_back' => $infoCertificate['show_back'],
+        'orientation' => $infoCertificate['orientation'],
+        'date_change' => $infoCertificate['date_change'],
+        'margin_left' => $infoCertificate['margin_left'],
+        'margin_right' => $infoCertificate['margin_right'],
+        'margin_top' => $infoCertificate['margin_top'],
+        'margin_bottom' => $infoCertificate['margin_bottom'],
+    ];
+
+} else {
+    $valuesDefaults = [
+        'formSent' => 1,
+        'front_content' => '',
+        'back_content' => '',
+        'show_back' => '0',
+        'orientation' => 'h',
+        'date_change' => '2',
+        'margin_left' => '1',
+        'margin_right' => '1',
+        'margin_top' => '1',
+        'margin_bottom' =>'1',
+    ];
+
+}
+
+$form->setDefaults($valuesDefaults);
+
+$form->addElement('hidden', 'formSent');
+
 try {
-    $form->setDefaults($valuesDefaults);
+
     $form->addElement('hidden', 'sec_token');
     $form->addElement('hidden', 'use_default');
     $form->addElement('hidden', 'default_certificate');
@@ -582,12 +617,12 @@ $tpl->display_one_col_template();
 /**
  * Delete the file if there is only one instance.
  *
- * @param int    $certificateId
+ * @param int $certificateId
  * @param string $imagePath
  * @param string $field
  * @param string $type
  */
-function checkInstanceImage($certificateId, $imagePath, $field, $type = 'certificates')
+function checkInstanceImage(int $certificateId, string $imagePath, string $field, string $type = 'certificates')
 {
     $table = Database::get_main_table(EasyCertificatePlugin::TABLE_EASYCERTIFICATE);
     $imagePath = Database::escape_string($imagePath);
