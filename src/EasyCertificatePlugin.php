@@ -509,18 +509,16 @@ class EasyCertificatePlugin extends Plugin
             header('Location: '.$url);
     }
 
-    public static function getGenerateUrlImg($userId, $catId, $codeCertificate){
+    public static function getGenerateUrlImg($userId, $codeCertificate){
         $userId = (int) $userId;
-        $catId  = (int) $catId;
         $codeCertificate  = (string) $codeCertificate;
         $generarImg  = "";
-        if (!empty($userId) && !empty($catId) && !empty($codeCertificate)) {
+        if (!empty($userId) && !empty($codeCertificate)) {
             $urlcert = api_get_path(WEB_PATH).'certificates/index.php'.
                     '?action=view&ccert='.$codeCertificate;
             $generarImg = self::generateQRImage($urlcert);
 
         }
-
         return $generarImg;
     }
 

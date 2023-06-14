@@ -29,7 +29,7 @@ if ($isDefault === 1) {
     $useDefault = true;
     $defaultCertificate = 1;
     $nameTools = $plugin->get_lang('CertificateSettingDefault');
-    $urlParams = '?default=1';
+    $urlParams = '?default=1&demo=true';
 } else {
     $courseId = api_get_course_int_id();
     $courseCode = api_get_course_id();
@@ -39,11 +39,6 @@ if ($isDefault === 1) {
     $defaultCertificate = 0;
     $urlParams = '?'.api_get_cidreq();
 }
-/*$sessionInfo = [];
-if ($sessionId > 0) {
-    $sessionInfo = SessionManager::fetch($sessionId);
-    var_dump($sessionInfo);
-}*/
 
 if (!$enable) {
     api_not_allowed(true, $plugin->get_lang('ToolDisabled'));
@@ -622,7 +617,7 @@ $tpl->display_one_col_template();
  * @param string $field
  * @param string $type
  */
-function checkInstanceImage(int $certificateId, string $imagePath, string $field, string $type = 'certificates')
+function checkInstanceImage($certificateId, $imagePath, $field, $type = 'certificates')
 {
     $table = Database::get_main_table(EasyCertificatePlugin::TABLE_EASYCERTIFICATE);
     $imagePath = Database::escape_string($imagePath);

@@ -3,7 +3,7 @@
 
 $default = isset($_GET['default']) ? (int)$_GET['default'] : null;
 $type = isset($_GET['type']) ? (int)$_GET['type'] : null;
-
+$demo = isset($_GET['demo']) ? (bool)$_GET['demo'] : null;
 
 if ($default === 1) {
     $cidReset = true;
@@ -102,221 +102,317 @@ if (empty($infoCertificate)) {
         $useDefault = true;
     }
 }
-
+$linkCertificateCSS = $urlBackgroundHorizontal = $urlBackgroundVertical = $myContentHtml = $nameUser = null;
 $workSpace = intval(297 - $infoCertificate['margin_left'] - $infoCertificate['margin_right']);
 $widthCell = intval($workSpace / 6);
 $htmlList = [];
 
 $currentLocalTime = api_get_local_time();
+if($demo){
+    foreach ($userList as $userInfo) {
+        $htmlText = null;
+        $linkCertificateCSS = '
+        <link rel="stylesheet"
+            type="text/css"
+            href="' . api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/resources/css/certificate.css">';
+        $linkCertificateCSS .= '
+        <link rel="stylesheet"
+            type="text/css"
+            href="' . api_get_path(WEB_CSS_PATH) . 'document.css">';
+        $studentId = $userInfo['user_id'];
+        $urlBackgroundHorizontal = $path . $infoCertificate['background_h'];
+        $urlBackgroundVertical = $path . $infoCertificate['background_v'];
 
-foreach ($userList as $userInfo) {
-    $htmlText = null;
+        $myContentHtml = $infoCertificate['front_content'];
+        $myContentHtml = str_replace(chr(13) . chr(10) . chr(13) . chr(10), chr(13) . chr(10), $myContentHtml);
 
-    $linkCertificateCSS = '
-    <link rel="stylesheet"
-        type="text/css"
-        href="' . api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/resources/css/certificate.css">';
-    $linkCertificateCSS .= '
-    <link rel="stylesheet"
-        type="text/css"
-        href="' . api_get_path(WEB_CSS_PATH) . 'document.css">';
 
-    $studentId = $userInfo['user_id'];
-    $urlBackgroundHorizontal = $path . $infoCertificate['background_h'];
-    $urlBackgroundVertical = $path . $infoCertificate['background_v'];
-    $allUserInfo = DocumentManager::get_all_info_to_certificate(
-        $studentId,
-        $courseCode,
-        false
-    );
+        $first_name = $userInfo['firstname'];
+        $last_name = $userInfo['lastname'];
+        $username = $userInfo['username'];
 
-    $myContentHtml = $infoCertificate['front_content'];
-    $myContentHtml = str_replace(chr(13) . chr(10) . chr(13) . chr(10), chr(13) . chr(10), $myContentHtml);
-    $infoToBeReplacedInContentHtml = $allUserInfo[0];
-    $infoToReplaceInContentHtml = $allUserInfo[1];
-    $myContentHtml = str_replace(
-        $infoToBeReplacedInContentHtml,
-        $infoToReplaceInContentHtml,
-        $myContentHtml
-    );
-
-    //Score Certificate
-
-    $score = GradebookUtils::get_certificate_by_user_id(
-        $catId,
-        $userInfo['user_id']
-    );
-
-    $myContentHtml = str_replace(
-        '((score_certificate))',
-        $score['score_certificate'],
-        $myContentHtml
-    );
-
-    //simple average with category
-    $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 0, $sessionId);
-
-    $myContentHtml = str_replace(
-        '((simple_average))',
-        $simpleAverageNotCategory,
-        $myContentHtml
-    );
-
-    //simple average with category
-    $simpleAverageCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 1, $sessionId);
-    $myContentHtml = str_replace(
-        '((simple_average_category))',
-        $simpleAverageCategory,
-        $myContentHtml
-    );
-
-    //ExtraField
-    $extraFieldsAll = EasyCertificatePlugin::getExtraFieldsUserAll(false);
-    if ($extraFieldsAll) {
-        foreach ($extraFieldsAll as $field) {
-            $valueExtraField = EasyCertificatePlugin::getValueExtraField($field, $studentId);
-            $myContentHtml = str_replace(
-                '((' . $field . '))',
-                $valueExtraField,
-                $myContentHtml
-            );
-        }
-    }
-
-    //Session Date.
-    $startDate = null;
-    $endDate = null;
-    if ($sessionId > 0) {
-        switch ($infoCertificate['date_change']) {
-            case 0:
-                if (!empty($sessionInfo['display_start_date'])) {
-                    $startDate = strtotime(api_get_local_time($sessionInfo['display_start_date']));
-                    $startDate = api_format_date($startDate, DATE_FORMAT_LONG_NO_DAY);
-                }
-                if (!empty($sessionInfo['display_end_date'])) {
-                    $endDate = strtotime(api_get_local_time($sessionInfo['display_end_date']));
-                    $endDate = api_format_date($endDate, DATE_FORMAT_LONG_NO_DAY);
-                }
-                break;
-            case 1:
-                if (!empty($sessionInfo['access_start_date'])) {
-                    $startDate = strtotime(api_get_local_time($sessionInfo['access_start_date']));
-                    $startDate = api_format_date($startDate, DATE_FORMAT_LONG_NO_DAY);
-                }
-                if (!empty($sessionInfo['access_end_date'])) {
-                    $endDate = strtotime(api_get_local_time($sessionInfo['access_end_date']));
-                    $endDate = api_format_date($endDate, DATE_FORMAT_LONG_NO_DAY);
-                }
-                break;
-        }
         $myContentHtml = str_replace(
-            '((session_start_date))',
-            $startDate,
+            '((user_firstname))',
+            $first_name,
             $myContentHtml
         );
 
         $myContentHtml = str_replace(
-            '((session_end_date))',
-            $endDate,
+            '((user_lastname))',
+            $last_name,
             $myContentHtml
         );
-    }
-    //Date Expedition
-    //Get Category GradeBook
-    $myCertificate = GradebookUtils::get_certificate_by_user_id(
-        $catId,
-        $studentId
-    );
-    $createdAt = '';
-    if (!empty($myCertificate['created_at'])) {
-        $createdAt = strtotime(api_get_local_time($myCertificate['created_at']));
+
+        $myContentHtml = str_replace(
+            '((username))',
+            $username,
+            $myContentHtml
+        );
+        // Course Title
+        $myContentHtml = str_replace(
+            '((course_title))',
+            $plugin->get_lang('CourseTitleDemo'),
+            $myContentHtml
+        );
+
+        //score
+        $score = 20;
+        $myContentHtml = str_replace(
+            '((score_certificate))',
+            $score,
+            $myContentHtml
+        );
+
+        $dateCurrent = date('d-m-Y');
+        $createdAt = strtotime(api_get_local_time($dateCurrent));
         $createdAt = api_format_date($createdAt, DATE_FORMAT_LONG_NO_DAY);
-    }
-    $myContentHtml = str_replace(
-        '((expedition_date))',
-        $createdAt,
-        $myContentHtml
-    );
 
-    $codeCertificate = EasyCertificatePlugin::getCodeCertificate($catId, $studentId);
-    if (!empty($codeCertificate)) {
         $myContentHtml = str_replace(
-            '((code_certificate))',
-            strtoupper($codeCertificate['code_certificate_md5']),
+            '((expedition_date))',
+            $createdAt,
             $myContentHtml
         );
-        $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $catId, $codeCertificate['code_certificate_md5']);
+        $codeCertificate = [
+            'id_certificate' => 999,
+            'code_certificate' => 999,
+            'code_certificate_md5' => md5(555)
+        ];
+
+        $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $codeCertificate['code_certificate_md5']);
         $myContentHtml = str_replace(
             '((qr-code))',
             '<img src="data:image/png;base64,' . $certificateQR . '">'
             ,
             $myContentHtml
         );
+        $myContentHtml = strip_tags(
+            $myContentHtml,
+            '<p><b><strong><table><tr><td><th><tbody><span><i><li><ol><ul>
+        <dd><dt><dl><br><hr><img><a><div><h1><h2><h3><h4><h5><h6>'
+        );
 
-        $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
-        $codCertificate = $codeCertificate['code_certificate'];
-        if (!empty($codCertificate)) {
+    }
+} else {
+    foreach ($userList as $userInfo) {
+        $htmlText = null;
+        $linkCertificateCSS = '
+        <link rel="stylesheet"
+            type="text/css"
+            href="' . api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/resources/css/certificate.css">';
+        $linkCertificateCSS .= '
+        <link rel="stylesheet"
+            type="text/css"
+            href="' . api_get_path(WEB_CSS_PATH) . 'document.css">';
+
+        $studentId = $userInfo['user_id'];
+        $urlBackgroundHorizontal = $path . $infoCertificate['background_h'];
+        $urlBackgroundVertical = $path . $infoCertificate['background_v'];
+        $allUserInfo = DocumentManager::get_all_info_to_certificate(
+            $studentId,
+            $courseCode,
+            false
+        );
+
+        $myContentHtml = $infoCertificate['front_content'];
+        $myContentHtml = str_replace(chr(13) . chr(10) . chr(13) . chr(10), chr(13) . chr(10), $myContentHtml);
+        $infoToBeReplacedInContentHtml = $allUserInfo[0];
+        $infoToReplaceInContentHtml = $allUserInfo[1];
+        $myContentHtml = str_replace(
+            $infoToBeReplacedInContentHtml,
+            $infoToReplaceInContentHtml,
+            $myContentHtml
+        );
+
+        //Score Certificate
+
+        $score = GradebookUtils::get_certificate_by_user_id(
+            $catId,
+            $userInfo['user_id']
+        );
+
+        $myContentHtml = str_replace(
+            '((score_certificate))',
+            $score['score_certificate'],
+            $myContentHtml
+        );
+
+        //simple average with category
+        $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 0, $sessionId);
+
+        $myContentHtml = str_replace(
+            '((simple_average))',
+            $simpleAverageNotCategory,
+            $myContentHtml
+        );
+
+        //simple average with category
+        $simpleAverageCategory = EasyCertificatePlugin::getScoreForEvaluations($courseInfo['code'], $studentId, 1, $sessionId);
+        $myContentHtml = str_replace(
+            '((simple_average_category))',
+            $simpleAverageCategory,
+            $myContentHtml
+        );
+
+        //ExtraField
+        $extraFieldsAll = EasyCertificatePlugin::getExtraFieldsUserAll(false);
+        if ($extraFieldsAll) {
+            foreach ($extraFieldsAll as $field) {
+                $valueExtraField = EasyCertificatePlugin::getValueExtraField($field, $studentId);
+                $myContentHtml = str_replace(
+                    '((' . $field . '))',
+                    $valueExtraField,
+                    $myContentHtml
+                );
+            }
+        }
+
+        //Session Date.
+        $startDate = null;
+        $endDate = null;
+        if ($sessionId > 0) {
+            switch ($infoCertificate['date_change']) {
+                case 0:
+                    if (!empty($sessionInfo['display_start_date'])) {
+                        $startDate = strtotime(api_get_local_time($sessionInfo['display_start_date']));
+                        $startDate = api_format_date($startDate, DATE_FORMAT_LONG_NO_DAY);
+                    }
+                    if (!empty($sessionInfo['display_end_date'])) {
+                        $endDate = strtotime(api_get_local_time($sessionInfo['display_end_date']));
+                        $endDate = api_format_date($endDate, DATE_FORMAT_LONG_NO_DAY);
+                    }
+                    break;
+                case 1:
+                    if (!empty($sessionInfo['access_start_date'])) {
+                        $startDate = strtotime(api_get_local_time($sessionInfo['access_start_date']));
+                        $startDate = api_format_date($startDate, DATE_FORMAT_LONG_NO_DAY);
+                    }
+                    if (!empty($sessionInfo['access_end_date'])) {
+                        $endDate = strtotime(api_get_local_time($sessionInfo['access_end_date']));
+                        $endDate = api_format_date($endDate, DATE_FORMAT_LONG_NO_DAY);
+                    }
+                    break;
+            }
             $myContentHtml = str_replace(
-                '((bar_code))',
-                '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">'
-                ,
+                '((session_start_date))',
+                $startDate,
+                $myContentHtml
+            );
+
+            $myContentHtml = str_replace(
+                '((session_end_date))',
+                $endDate,
                 $myContentHtml
             );
         }
-    }
+        //Date Expedition
+        //Get Category GradeBook
+        $myCertificate = GradebookUtils::get_certificate_by_user_id(
+            $catId,
+            $studentId
+        );
+        $createdAt = '';
+        if (!empty($myCertificate['created_at'])) {
+            $createdAt = strtotime(api_get_local_time($myCertificate['created_at']));
+            $createdAt = api_format_date($createdAt, DATE_FORMAT_LONG_NO_DAY);
+        }
+        $myContentHtml = str_replace(
+            '((expedition_date))',
+            $createdAt,
+            $myContentHtml
+        );
 
-    $myContentHtml = strip_tags(
-        $myContentHtml,
-        '<p><b><strong><table><tr><td><th><tbody><span><i><li><ol><ul>
+        $codeCertificate = EasyCertificatePlugin::getCodeCertificate($catId, $studentId);
+        if (!empty($codeCertificate)) {
+            $myContentHtml = str_replace(
+                '((code_certificate))',
+                strtoupper($codeCertificate['code_certificate_md5']),
+                $myContentHtml
+            );
+            $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $codeCertificate['code_certificate_md5']);
+            $myContentHtml = str_replace(
+                '((qr-code))',
+                '<img src="data:image/png;base64,' . $certificateQR . '">'
+                ,
+                $myContentHtml
+            );
+
+            $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
+            $codCertificate = $codeCertificate['code_certificate'];
+            if (!empty($codCertificate)) {
+                $myContentHtml = str_replace(
+                    '((bar_code))',
+                    '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">'
+                    ,
+                    $myContentHtml
+                );
+            }
+        }
+
+        $myContentHtml = strip_tags(
+            $myContentHtml,
+            '<p><b><strong><table><tr><td><th><tbody><span><i><li><ol><ul>
         <dd><dt><dl><br><hr><img><a><div><h1><h2><h3><h4><h5><h6>'
-    );
+        );
 
-    $orientation = $infoCertificate['orientation'];
-    $format = 'A4-L';
-    $pageOrientation = 'L';
-    if ($orientation != 'h') {
-        $format = 'A4';
-        $pageOrientation = 'P';
+        $nameUser =  $userInfo['complete_name'];
+
     }
-
-    $marginLeft = ($infoCertificate['margin_left'] > 0) ? $infoCertificate['margin_left'] . 'cm' : 0;
-    $marginRight = ($infoCertificate['margin_right'] > 0) ? $infoCertificate['margin_right'] . 'cm' : 0;
-    $marginTop = ($infoCertificate['margin_top'] > 0) ? $infoCertificate['margin_top'] . 'cm' : 0;
-    $marginBottom = ($infoCertificate['margin_bottom'] > 0) ? $infoCertificate['margin_bottom'] . 'cm' : 0;
-    $margin = $marginTop . ' ' . $marginRight . ' ' . $marginBottom . ' ' . $marginLeft;
-
-    $templateName = $plugin->get_lang('ExportCertificate');
-    $template = new Template($templateName);
-    $template->assign('css_certificate', $linkCertificateCSS);
-    $template->assign('orientation', $orientation);
-    $template->assign('background_h', $urlBackgroundHorizontal);
-    $template->assign('background_v', $urlBackgroundVertical);
-    $template->assign('margin', $margin);
-    $template->assign('front_content', $myContentHtml);
-    $template->assign('show_back', $infoCertificate['show_back']);
-
-    // Rear certificate
-    $laterContent = null;
-    $laterContent .= '<table width="100%" class="contents-learnpath">';
-    $laterContent .= '<tr>';
-    $laterContent .= '<td>';
-    $myContentHtml = strip_tags(
-        $infoCertificate['back_content'],
-        '<p><b><strong><table><tr><td><th><span><i><li><ol><ul>' .
-        '<dd><dt><dl><br><hr><img><a><div><h1><h2><h3><h4><h5><h6>'
-    );
-    $laterContent .= $myContentHtml;
-    $laterContent .= '</td>';
-    $laterContent .= '</tr>';
-    $laterContent .= '</table>';
-
-    $template->assign('back_content', $laterContent);
-    $content = $template->fetch('easycertificate/template/certificate.tpl');
-    $htmlText .= $content;
-
-    $fileName = 'certificate_' . $courseInfo['code'] . '_' . $userInfo['complete_name'] . '_' . $currentLocalTime;
-    $htmlList[$fileName] = $htmlText;
 }
+
+
+
+
+$orientation = $infoCertificate['orientation'];
+$format = 'A4-L';
+$pageOrientation = 'L';
+if ($orientation != 'h') {
+    $format = 'A4';
+    $pageOrientation = 'P';
+}
+
+$marginLeft = ($infoCertificate['margin_left'] > 0) ? $infoCertificate['margin_left'] . 'cm' : 0;
+$marginRight = ($infoCertificate['margin_right'] > 0) ? $infoCertificate['margin_right'] . 'cm' : 0;
+$marginTop = ($infoCertificate['margin_top'] > 0) ? $infoCertificate['margin_top'] . 'cm' : 0;
+$marginBottom = ($infoCertificate['margin_bottom'] > 0) ? $infoCertificate['margin_bottom'] . 'cm' : 0;
+$margin = $marginTop . ' ' . $marginRight . ' ' . $marginBottom . ' ' . $marginLeft;
+
+$templateName = $plugin->get_lang('ExportCertificate');
+$template = new Template($templateName);
+$template->assign('css_certificate', $linkCertificateCSS);
+$template->assign('orientation', $orientation);
+$template->assign('background_h', $urlBackgroundHorizontal);
+$template->assign('background_v', $urlBackgroundVertical);
+$template->assign('margin', $margin);
+$template->assign('front_content', $myContentHtml);
+$template->assign('show_back', $infoCertificate['show_back']);
+
+// Rear certificate
+$laterContent = null;
+$laterContent .= '<table width="100%" class="contents-learnpath">';
+$laterContent .= '<tr>';
+$laterContent .= '<td>';
+$myContentHtml = strip_tags(
+    $infoCertificate['back_content'],
+    '<p><b><strong><table><tr><td><th><span><i><li><ol><ul>' .
+    '<dd><dt><dl><br><hr><img><a><div><h1><h2><h3><h4><h5><h6>'
+);
+$laterContent .= $myContentHtml;
+$laterContent .= '</td>';
+$laterContent .= '</tr>';
+$laterContent .= '</table>';
+
+$template->assign('back_content', $laterContent);
+$content = $template->fetch('easycertificate/template/certificate.tpl');
+$htmlText = $content;
+
+if($demo){
+    $courseInfo['code'] = 'DEMO';
+}
+
+$fileName = 'certificate_' . $courseInfo['code'] . '_' . $nameUser . '_' . $currentLocalTime;
+
+$htmlList[$fileName] = $htmlText;
+
 
 $fileList = [];
 $archivePath = api_get_path(SYS_ARCHIVE_PATH) . 'certificates/';
@@ -360,7 +456,7 @@ if (!empty($fileList)) {
     exit;
 }
 
-function getIndexFiltered($index)
+function getIndexFiltered($index): string
 {
     $txt = strip_tags($index, "<b><strong><i>");
     $txt = str_replace(chr(13) . chr(10) . chr(13) . chr(10), chr(13) . chr(10), $txt);
