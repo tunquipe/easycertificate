@@ -3,6 +3,7 @@ $strings['plugin_title'] = "Easy Certificado";
 $strings['plugin_comment'] = "Este plugin permite crear certificados personalizados faciles en el curso.";
 $strings['enable_plugin_easycertificate'] = "Activar plugin";
 $strings['easycertificate_course_enable'] = "Habilitar en el curso el certificado alternativo";
+$strings['enable_plugin_congratulations'] = 'Activar el agradecimiento global, por lograr el certificado';
 $strings['use_certificate_default'] = "Usar el certificado personalizado por defecto";
 $strings['ToolDisabled'] = "La herramienta está deshabilitada desde la administración";
 $strings['OnlyAdminPlatform'] = "Herramienta exclusiva para administradores";
