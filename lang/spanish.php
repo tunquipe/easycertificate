@@ -90,3 +90,5 @@ $strings['RegisterOfGeneratedCertificates'] = "Validación de certificados";
 $strings['ErrorInTheRegisteredCertificate'] = "<strong>Nota:</strong> Si existe un error en los datos registrados, por favor comunicarse con la institución a cargo.";
 $strings['percentage'] = "Con porcentaje %";
 $strings['CourseTitleDemo'] = "Curso de demostración";
+$strings['CertificateDeliveryMessage'] = "Mensaje de entrega de certificado en la lección";
+$strings['SaveMessage'] = 'Guardar mensaje';

@@ -108,7 +108,7 @@ $widthCell = intval($workSpace / 6);
 $htmlList = [];
 
 $currentLocalTime = api_get_local_time();
-if($demo){
+if ($demo) {
     foreach ($userList as $userInfo) {
         $htmlText = null;
         $linkCertificateCSS = '
@@ -354,12 +354,10 @@ if($demo){
         <dd><dt><dl><br><hr><img><a><div><h1><h2><h3><h4><h5><h6>'
         );
 
-        $nameUser =  $userInfo['complete_name'];
+        $nameUser = $userInfo['complete_name'];
 
     }
 }
-
-
 
 
 $orientation = $infoCertificate['orientation'];
@@ -405,7 +403,7 @@ $template->assign('back_content', $laterContent);
 $content = $template->fetch('easycertificate/template/certificate.tpl');
 $htmlText = $content;
 
-if($demo){
+if ($demo) {
     $courseInfo['code'] = 'DEMO';
 }
 
@@ -477,7 +475,7 @@ function getIndexFiltered($index): string
 
     $showLeft = str_replace(chr(13) . chr(10), "<br/>", $text1);
     $showRight = str_replace(chr(13) . chr(10), "<br/>", $text2);
-    $result = '<table width="100%">';
+    $result = '<table style="width:100%;">';
     $result .= '<tr>';
     $result .= '<td style="width:50%;vertical-align:top;padding-left:15px; font-size:12px;">' . $showLeft . '</td>';
     $result .= '<td style="vertical-align:top; font-size:12px;">' . $showRight . '</td>';

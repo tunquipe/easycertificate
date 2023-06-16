@@ -551,4 +551,9 @@ class EasyCertificatePlugin extends Plugin
         return false;
     }
 
+    public static function getContentCongratulations(){
+        $filepath = api_get_path(SYS_PLUGIN_PATH).'easycertificate/document/';
+        $filename = $filepath.'congratulations.html';
+        return file_get_contents($filename);
+    }
 }

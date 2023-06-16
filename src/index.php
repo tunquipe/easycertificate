@@ -217,10 +217,17 @@ if (empty($infoCertificate)) {
 // Display the header
 $tpl = new Template($nameTools,true,true,false,false,true,false);
 $iconCertificate = api_get_path(WEB_PLUGIN_PATH).'easycertificate/resources/img/easycertificate.png';
+$iconEmblem = api_get_path(WEB_PLUGIN_PATH).'easycertificate/resources/img/emblem_medal.png';
 $actionsLeft = Display::url(
     Display::tag('img',null, ['src'=>$iconCertificate]),
     'print_certificate.php'.$urlParams
 );
+
+$actionsLeft.= Display::url(
+    Display::tag('img',null, ['src'=>$iconEmblem]),
+    'congratulations.php'.$urlParams
+);
+
 if (!empty($courseId) && !$useDefault) {
     $actionsLeft .= Display::url(
         Display::return_icon('delete.png', $plugin->get_lang('DeleteCertificate'), '', ICON_SIZE_MEDIUM),
@@ -535,7 +542,7 @@ $form->addButton(
     get_lang('SaveCertificate'),
     'check',
     'primary',
-    'large',
+    'default',
     null,
     [
         'cols-size' => [0, 12, 0]
