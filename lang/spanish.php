@@ -93,3 +93,4 @@ $strings['percentage'] = "Con porcentaje %";
 $strings['CourseTitleDemo'] = "Curso de demostración";
 $strings['CertificateDeliveryMessage'] = "Mensaje de entrega de certificado en la lección";
 $strings['SaveMessage'] = 'Guardar mensaje';
+$strings['ItemGlobalCertificateEnabled'] = 'El ítem final global de certificado esta activado, deja vació el editor y solo coloque el titulo del item final.';
