@@ -12,6 +12,7 @@ use Endroid\QrCode\QrCode;
 class EasyCertificatePlugin extends Plugin
 {
     const TABLE_EASYCERTIFICATE = 'plugin_easycertificate';
+    const TABLE_EASYCERTIFICATE_SEND = 'plugin_easycertificate_send';
     public $isCoursePlugin = true;
 
     // When creating a new course this settings are added to the course
@@ -78,6 +79,15 @@ class EasyCertificatePlugin extends Plugin
         }
 
         require_once api_get_path(SYS_PLUGIN_PATH).'easycertificate/database.php';
+
+        $sql = "CREATE TABLE IF NOT EXISTS ".self::TABLE_EASYCERTIFICATE_SEND." (
+            id INT unsigned NOT NULL auto_increment PRIMARY KEY,
+            user_id INT,
+            course_id INT,
+            session_id INT NULL,
+            certificate_id INT NULL
+        )";
+        Database::query($sql);
     }
 
     /**
@@ -88,13 +98,19 @@ class EasyCertificatePlugin extends Plugin
         // Deleting course settings.
         $this->uninstall_course_fields_in_all_courses();
 
-        $tablesToBeDeleted = [self::TABLE_EASYCERTIFICATE];
+        $tablesToBeDeleted = [
+            self::TABLE_EASYCERTIFICATE,
+            self::TABLE_EASYCERTIFICATE_SEND
+        ];
         foreach ($tablesToBeDeleted as $tableToBeDeleted) {
             $table = Database::get_main_table($tableToBeDeleted);
             $sql = "DROP TABLE IF EXISTS $table";
             Database::query($sql);
         }
         $this->manageTab(false);
+
+
+
     }
 
     /**
@@ -557,4 +573,49 @@ class EasyCertificatePlugin extends Plugin
         $filename = $filepath.'congratulations.html';
         return file_get_contents($filename);
     }
+
+    public static function registerCertificateUserSend($values){
+        if (!is_array($values)) {
+            return false;
+        }
+        $certificateSend = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
+
+        $params = [
+            'user_id' => $values['user_id'],
+            'course_id' => $values['course_id'],
+            'session_id' => $values['session_id'],
+            'certificate_id' => $values['certificate_id'],
+            'send' => $values['send']
+        ];
+        $id = Database::insert($certificateSend, $params);
+        if ($id > 0) {
+            return $id;
+        }
+
+    }
+
+    public static function getCertificateUser($userID){
+        $certificateTable = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CERTIFICATE);
+        $sql = "SELECT gc.id FROM $certificateTable gc WHERE gc.user_id = $userID";
+        $rs = Database::query($sql);
+        if (Database::num_rows($rs) > 0) {
+            $row = Database::fetch_assoc($rs);
+            return $row['id'];
+        }
+    }
+
+    public static function getSendCertificate($userID){
+        $table = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
+        $sql = "SELECT pes.id FROM $table pes WHERE pes.user_id = $userID";
+        $rs = Database::query($sql);
+        if (Database::num_rows($rs) > 0) {
+            $row = Database::fetch_assoc($rs);
+            if(empty($row)){
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
+
 }
