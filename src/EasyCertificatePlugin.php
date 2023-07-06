@@ -604,9 +604,9 @@ class EasyCertificatePlugin extends Plugin
         }
     }
 
-    public static function getSendCertificate($userID){
+    public static function getSendCertificate($idUser, $idCourse, $idSession){
         $table = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
-        $sql = "SELECT pes.id FROM $table pes WHERE pes.user_id = $userID";
+        $sql = "SELECT pes.id FROM $table pes WHERE pes.user_id = $idUser AND pes.course_id = $idCourse AND pes.session_id = $idSession";
         $rs = Database::query($sql);
         if (Database::num_rows($rs) > 0) {
             $row = Database::fetch_assoc($rs);
