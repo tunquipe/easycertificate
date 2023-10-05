@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<head>
-    {{ css_certificate }}
-</head>
-<body style="margin: 0; padding: 0;">
+
 {% if orientation != 'v' %}
     {% if background_h %}
         <div id="page-a" style="background-image: url('{{ background_h }}'); background-size: cover; width: 1200px; height: 793px; position: relative;">
@@ -27,5 +23,3 @@
             </div>
         </div>
     {% endif %}
-</body>
-</html>

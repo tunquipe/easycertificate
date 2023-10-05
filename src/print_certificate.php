@@ -130,105 +130,23 @@ $margin = $marginTop . ' ' . $marginRight . ' ' . $marginBottom . ' ' . $marginL
 $templateName = $plugin->get_lang('ExportCertificate');
 $template = new Template($templateName);
 
-/*if ($demo) {
-    $courseInfo['code'] = 'DEMO';
-    foreach ($userList as $userInfo) {
-        $htmlText = null;
-        $linkCertificateCSS = '
-        <link rel="stylesheet"
-            type="text/css"
-            href="' . api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/resources/css/certificate.css">';
-        $linkCertificateCSS .= '
-        <link rel="stylesheet"
-            type="text/css"
-            href="' . api_get_path(WEB_CSS_PATH) . 'document.css">';
-        $studentId = $userInfo['user_id'];
-        $urlBackgroundHorizontal = $path . $infoCertificate['background_h'];
-        $urlBackgroundVertical = $path . $infoCertificate['background_v'];
-
-        $myContentHtml = $infoCertificate['front_content'];
-        $myContentHtml = str_replace(chr(13) . chr(10) . chr(13) . chr(10), chr(13) . chr(10), $myContentHtml);
-
-
-        $first_name = $userInfo['firstname'];
-        $last_name = $userInfo['lastname'];
-        $username = $userInfo['username'];
-
-        $myContentHtml = str_replace(
-            '((user_firstname))',
-            $first_name,
-            $myContentHtml
-        );
-
-        $myContentHtml = str_replace(
-            '((user_lastname))',
-            $last_name,
-            $myContentHtml
-        );
-
-        $myContentHtml = str_replace(
-            '((username))',
-            $username,
-            $myContentHtml
-        );
-        // Course Title
-        $myContentHtml = str_replace(
-            '((course_title))',
-            $plugin->get_lang('CourseTitleDemo'),
-            $myContentHtml
-        );
-
-        //score
-        $score = 20;
-        $myContentHtml = str_replace(
-            '((score_certificate))',
-            $score,
-            $myContentHtml
-        );
-
-        $dateCurrent = date('d-m-Y');
-        $createdAt = strtotime(api_get_local_time($dateCurrent));
-        $createdAt = api_format_date($createdAt, DATE_FORMAT_LONG_NO_DAY);
-
-        $myContentHtml = str_replace(
-            '((expedition_date))',
-            $createdAt,
-            $myContentHtml
-        );
-        $codeCertificate = [
-            'id_certificate' => 999,
-            'code_certificate' => 999,
-            'code_certificate_md5' => md5(555)
-        ];
-
-        $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $codeCertificate['code_certificate_md5']);
-        $myContentHtml = str_replace(
-            '((qr-code))',
-            '<img src="data:image/png;base64,' . $certificateQR . '">'
-            ,
-            $myContentHtml
-        );
-        $myContentHtml = strip_tags(
-            $myContentHtml,
-            '<p><b><strong><table><tr><td><th><tbody><span><i><li><ol><ul>
-        <dd><dt><dl><br><hr><img><a><div><h1><h2><h3><h4><h5><h6>'
-        );
-
-    }
-} else {*/
 $fileList = [];
 $archivePath = api_get_path(SYS_ARCHIVE_PATH) . 'certificates/';
-foreach ($userList as $userInfo) {
-    $htmlText = null;
-    $linkCertificateCSS = '
+$linkCertificateCSS = '
         <link rel="stylesheet"
             type="text/css"
             href="' . api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/resources/css/certificate.css">';
-    $linkCertificateCSS .= '
+$linkCertificateCSS .= '
         <link rel="stylesheet"
             type="text/css"
             href="' . api_get_path(WEB_CSS_PATH) . 'document.css">';
-
+$starPage = '<!DOCTYPE html>
+<head>'.$linkCertificateCSS.'
+</head>
+<body style="margin: 0; padding: 0;">';
+$endPage = '</body></html>';
+$htmlText = null;
+foreach ($userList as $userInfo) {
     $studentId = $userInfo['user_id'];
     $urlBackgroundHorizontal = $path . $infoCertificate['background_h'];
     $urlBackgroundVertical = $path . $infoCertificate['background_v'];
@@ -406,12 +324,35 @@ foreach ($userList as $userInfo) {
 
     $template->assign('back_content', $laterContent);
     $content = $template->fetch('easycertificate/template/certificate.tpl');
-    $htmlText = $content;
-    $nameCertificate = strtoupper(str_replace([" ", ","], "_", $userInfo['complete_name']));
-    $fileName = $nameCertificate . '_CERT_' . $courseInfo['code'];
+
+    if($exportAllInOne){
+        $htmlText.= $content;
+    } else {
+        $htmlText = $starPage.$content.$endPage;
+        $nameCertificate = strtoupper(str_replace([" ", ","], "_", $userInfo['complete_name']));
+        $fileName = $nameCertificate . '_CERT_' . $courseInfo['code'];
+        $fileName = api_replace_dangerous_char($fileName);
+        $htmlList[$fileName] = $htmlText;
+        $fileList[] = $archivePath.$fileName.'.pdf';
+    }
+}
+
+if($exportAllInOne) {
+    $fileName = '_CERT_' . $courseInfo['code'] . '_ALL';
     $fileName = api_replace_dangerous_char($fileName);
-    $htmlList[$fileName] = $htmlText;
-    $fileList[] = $archivePath.$fileName.'.pdf';
+    $params = [
+        'filename' => $fileName,
+        'pdf_title' => 'Certificate',
+        'pdf_description' => '',
+        'format' => $format,
+        'orientation' => $pageOrientation,
+        'left' => 0,
+        'top' => 0,
+        'bottom' => 0,
+        'right' => 0
+    ];
+    $pdf = new PDF($params['format'], $params['orientation'], $params);
+    $pdf->content_to_pdf($starPage.$htmlText.$endPage, '', $fileName, null, 'D', false, null, false, false, false);
 }
 
 if (!is_dir($archivePath)) {
