@@ -629,8 +629,6 @@ class EasyCertificatePlugin extends Plugin
 
     public function sendExpirationReminder()
     {
-        $nowTimestamp = time();
-
         // Tablas principales (usar constantes o definir si no existen)
         $tblSend = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
         $tblCert = Database::get_main_table(self::TABLE_EASYCERTIFICATE);
@@ -646,6 +644,8 @@ class EasyCertificatePlugin extends Plugin
             u.email          AS email,
             c.id             AS certificate_id,
             s.created_at     AS issued_at,
+            u.firstname     AS firstname,
+            u.lastname     AS lastname,
             c.expiration_date
         FROM {$tblSend} AS s
         INNER JOIN {$tblCert} AS c
@@ -662,6 +662,7 @@ class EasyCertificatePlugin extends Plugin
             )
             AND s.expiration_reminder_sent = 0;
         ";
+
         $res = Database::query($sql);
 
         if (Database::num_rows($res) === 0) {
@@ -672,14 +673,20 @@ class EasyCertificatePlugin extends Plugin
         while ($row = Database::fetch_array($res, 'ASSOC')) {
             $sendId  = (int) $row['send_id'];
             $userId  = (int) $row['user_id'];
-            //$email   = $row['email'];
+            $email   = $row['email'];
             $certId  = (int) $row['certificate_id'];
-            $expTs   = (int) $row['expiration_date'];
+            $firstname   = $row['firstname'];
+            $lastname   = $row['lastname'];
             //$expDate = date('Y-m-d', $expTs);
 
             // Preparar email
             $subject = "Recordatorio: tu certificado #{$certId} ha expirado";
-            MessageManager::send_message_simple($userId, $subject, $this->expirationReminderContent());
+            api_mail_html(
+                $firstname . ' ' . $lastname,
+                $email,
+                $subject,
+                $this->expirationReminderContent()
+            );
 
             // 3) Marcar como enviado
             $updateSql = "
