@@ -136,6 +136,7 @@ if ($form->validate()) {
             'margin_right' => (int) $formValues['margin_right'],
             'margin_top' => (int) $formValues['margin_top'],
             'margin_bottom' => (int) $formValues['margin_bottom'],
+            'expiration_date' => !empty($formValues['expiration_date']) ? (int) $formValues['expiration_date'] : null,
             'certificate_default' => 0,
             'show_back' => $showBack,
             'date_change' => (int) $formValues['date_change']
@@ -218,6 +219,8 @@ if (empty($infoCertificate)) {
 $tpl = new Template($nameTools,true,true,false,false,true,false);
 $iconCertificate = api_get_path(WEB_PLUGIN_PATH).'easycertificate/resources/img/easycertificate.png';
 $iconEmblem = api_get_path(WEB_PLUGIN_PATH).'easycertificate/resources/img/emblem_medal.png';
+$iconReminder = api_get_path(WEB_PLUGIN_PATH).'easycertificate/resources/img/reminder.png';
+
 $actionsLeft = Display::url(
     Display::tag('img',null, ['src'=>$iconCertificate]),
     'print_certificate.php'.$urlParams
@@ -226,6 +229,11 @@ $actionsLeft = Display::url(
 $actionsLeft.= Display::url(
     Display::tag('img',null, ['src'=>$iconEmblem]),
     'congratulations.php'.$urlParams
+);
+
+$actionsLeft.= Display::url(
+    Display::tag('img',null, ['src'=>$iconReminder]),
+    'expiration_reminder.php'.$urlParams
 );
 
 if (!empty($courseId) && !$useDefault) {
@@ -353,7 +361,8 @@ $listTags = [
     'simple_average_category',
     'simple_average',
     'qr-code',
-    'bar_code'
+    'bar_code',
+    'expiration_date',
 ];
 
 $strInfo = '<ul class="list-tags">';
@@ -536,6 +545,18 @@ try {
     error_log($e);
 }
 
+$form->addSelect(
+    'expiration_date',
+    'Fecha de Expiración',
+    [
+        '' => '- Sin Fecha de Expiración -',
+        '30' => '1 mes',
+        '90' => '3 meses',
+        '365' => '1 año',
+        '730' => '2 años',
+    ]
+);
+
 $form->addHtml('</div></div>');
 $form->addButton(
     'submit',
@@ -563,6 +584,7 @@ if(!empty($infoCertificate)){
         'margin_right' => $infoCertificate['margin_right'],
         'margin_top' => $infoCertificate['margin_top'],
         'margin_bottom' => $infoCertificate['margin_bottom'],
+        'expiration_date' => $infoCertificate['expiration_date'],
     ];
 
 } else {
@@ -577,6 +599,7 @@ if(!empty($infoCertificate)){
         'margin_right' => '1',
         'margin_top' => '1',
         'margin_bottom' =>'1',
+        'expiration_date' => null
     ];
 
 }
