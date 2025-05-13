@@ -629,74 +629,79 @@ class EasyCertificatePlugin extends Plugin
 
     public function sendExpirationReminder()
     {
-        // Tablas principales (usar constantes o definir si no existen)
         $tblSend = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
         $tblCert = Database::get_main_table(self::TABLE_EASYCERTIFICATE);
         $tblUser = Database::get_main_table(TABLE_MAIN_USER);
 
-        // 1) Recuperar envíos pendientes de recordatorio
-        //    - expiration_date < ahora (Unix timestamp)
-        //    - expiration_reminder_sent = 0
-        $sql = "
-             SELECT
-            s.id             AS send_id,
-            s.user_id        AS user_id,
-            u.email          AS email,
-            c.id             AS certificate_id,
-            s.created_at     AS issued_at,
-            u.firstname     AS firstname,
-            u.lastname     AS lastname,
-            c.expiration_date
-        FROM {$tblSend} AS s
-        INNER JOIN {$tblCert} AS c
-            ON s.certificate_id = c.id
-        INNER JOIN {$tblUser} AS u
-            ON u.user_id = s.user_id
-        WHERE
-            c.expiration_date IS NOT NULL
-            /* Fecha de expiración real: s.created_at + INTERVAL c.expiration_date DAY */
-            /* Fecha de envío de recordatorio: 30 días antes de eso */
-            AND NOW() >= DATE_SUB(
-                DATE_ADD(s.created_at, INTERVAL c.expiration_date DAY),
-                INTERVAL 30 DAY
-            )
-            AND s.expiration_reminder_sent = 0;
+        // Construimos dos bloques: uno para 30 días antes, otro para 15.
+        $intervals = [
+            ['days' => 30, 'flag' => 'reminder_30_sent', 'flag_at' => 'reminder_30_sent_at'],
+            ['days' => 15, 'flag' => 'reminder_15_sent', 'flag_at' => 'reminder_15_sent_at'],
+        ];
+
+        foreach ($intervals as $iv) {
+            list($days, $flag, $flagAt) = [$iv['days'], $iv['flag'], $iv['flag_at']];
+
+            // 1) Seleccionamos envíos que aún no tengan este recordatorio
+            $sql = "
+            SELECT
+                s.id           AS send_id,
+                s.user_id      AS user_id,
+                u.email        AS email,
+                c.id           AS certificate_id,
+                s.created_at   AS issued_at,
+                u.firstname    AS firstname,
+                u.lastname     AS lastname,
+                c.expiration_date
+            FROM {$tblSend} AS s
+            INNER JOIN {$tblCert} AS c
+                ON s.certificate_id = c.id
+            INNER JOIN {$tblUser} AS u
+                ON u.user_id = s.user_id
+            WHERE
+                c.expiration_date IS NOT NULL
+                /* Fecha de expiración real: s.created_at + INTERVAL c.expiration_date DAY */
+                /* Límite para este recordatorio: {$days} días antes */
+                AND NOW() >= DATE_SUB(
+                    DATE_ADD(s.created_at, INTERVAL c.expiration_date DAY),
+                    INTERVAL {$days} DAY
+                )
+                /* No lo hemos enviado todavía */
+                AND s.{$flag} = 0
         ";
 
-        $res = Database::query($sql);
+            $res = Database::query($sql);
+            if (Database::num_rows($res) === 0) {
+                continue;
+            }
 
-        if (Database::num_rows($res) === 0) {
-            return;
-        }
+            // 2) Iteramos y enviamos
+            while ($row = Database::fetch_array($res, 'ASSOC')) {
+                $sendId   = (int) $row['send_id'];
+                $userId   = (int) $row['user_id'];
+                $email    = $row['email'];
+                $certId   = (int) $row['certificate_id'];
+                $firstname= $row['firstname'];
+                $lastname = $row['lastname'];
 
-        // 2) Iterar y enviar recordatorios
-        while ($row = Database::fetch_array($res, 'ASSOC')) {
-            $sendId  = (int) $row['send_id'];
-            $userId  = (int) $row['user_id'];
-            $email   = $row['email'];
-            $certId  = (int) $row['certificate_id'];
-            $firstname   = $row['firstname'];
-            $lastname   = $row['lastname'];
-            //$expDate = date('Y-m-d', $expTs);
+                // Personaliza asunto según días
+                $subject = "Recordatorio: tu certificado #{$certId} vence en {$days} días";
+                api_mail_html(
+                    "{$firstname} {$lastname}",
+                    $email,
+                    $subject,
+                    $this->expirationReminderContent($days)
+                );
 
-            // Preparar email
-            $subject = "Recordatorio: tu certificado #{$certId} ha expirado";
-            api_mail_html(
-                $firstname . ' ' . $lastname,
-                $email,
-                $subject,
-                $this->expirationReminderContent()
-            );
-
-            // 3) Marcar como enviado
-            $updateSql = "
-            UPDATE {$tblSend}
-               SET expiration_reminder_sent    = 1,
-                   expiration_reminder_sent_at = NOW()
-             WHERE id = {$sendId}
-        ";
-            Database::query($updateSql);
+                // 3) Marcamos este recordatorio como enviado
+                $updateSql = "
+                UPDATE {$tblSend}
+                   SET {$flag}    = 1,
+                       {$flagAt} = NOW()
+                 WHERE id = {$sendId}
+            ";
+                Database::query($updateSql);
+            }
         }
     }
-
 }

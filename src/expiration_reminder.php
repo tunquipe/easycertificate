@@ -30,7 +30,7 @@ $form = new FormValidator(
 );
 
 // Student and course section
-$form->addHeader('Configura tu mensaje de Expiración');
+$form->addHeader('Configura tus mensajes de Expiración');
 
 $editorConfigOne = [
     'ToolbarSet' => 'Documents',
@@ -44,15 +44,28 @@ $editorConfigOne = [
     'BaseHref' => $baseHref,
 ];
 //$form->addText('title',get_lang('Title'));
+$form->addHtml('<div class="row"> <h3> Recordatorio 30 días antes: </h3> </div>');
 $form->addHtml('<div class="row"><div class="col-md-2"></div><div class="col-md-8">');
 $form->addHtmlEditor(
-    'content',
+    'content_30',
     '',
     false,
     true,
     $editorConfigOne
 );
 $form->addHtml('</div><div class="col-md-2"></div></div>');
+
+$form->addHtml('<div class="row"> <h3> Recordatorio 15 días antes: </h3> </div>');
+$form->addHtml('<div class="row"><div class="col-md-2"></div><div class="col-md-8">');
+$form->addHtmlEditor(
+    'content_15',
+    '',
+    false,
+    true,
+    $editorConfigOne
+);
+$form->addHtml('</div><div class="col-md-2"></div></div>');
+
 $form->addButton(
     'submit',
     get_lang('SaveMessage'),
@@ -65,19 +78,35 @@ $form->addButton(
     ]
 );
 $filepath = api_get_path(SYS_PLUGIN_PATH) . 'easycertificate/document/';
-$filename = $filepath . 'expiration_reminder.html';
+$filename30 = $filepath . 'expiration_reminder_30.html';
+$filename15 = $filepath . 'expiration_reminder_15.html';
 if ($form->validate()) {
     $values = $form->getSubmitValues();
     //save content
-    if (!file_exists($filepath . $filename)) {
-        $content = stripslashes($values['content']);
-        file_put_contents($filename, $content);
+    if (!file_exists($filepath . $filename30)) {
+        $content = stripslashes($values['content_30']);
+        file_put_contents($filename30, $content);
+    }
+    if (!file_exists($filepath . $filename15)) {
+        $content = stripslashes($values['content_15']);
+        file_put_contents($filename15, $content);
     }
 } else {
-    if (file_exists($filename)) {
-        $content = file_get_contents($filename);
+    if (file_exists($filename30)) {
+        $content = file_get_contents($filename30);
         $values = [
-            'content' => $content
+            'content_30' => $content
+        ];
+        try {
+            $form->setDefaults($values);
+        } catch (Exception $e) {
+            print_r($e);
+        }
+    }
+    if (file_exists($filename15)) {
+        $content = file_get_contents($filename15);
+        $values = [
+            'content_15' => $content
         ];
         try {
             $form->setDefaults($values);
