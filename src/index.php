@@ -362,6 +362,7 @@ $listTags = [
     'simple_average',
     'qr-code',
     'bar_code',
+    'valid_from',
     'expiration_date',
 ];
 
