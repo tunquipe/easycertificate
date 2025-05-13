@@ -513,6 +513,7 @@ class EasyCertificatePlugin extends Plugin
                         'datePrint' => $row['created_at'],
                         'scoreCertificate' => $row['score_certificate'].$percentageValue.'<br>'.$simpleAverageNotCategory,
                         'codeCertificate' => md5($row['code_certificate']),
+                        'proikosCertCode' => str_pad($row['id_certificate'], 8, '0', STR_PAD_LEFT),
                         'urlBarCode' => $imgCodeBar,
                     ];
                 }

@@ -42,6 +42,9 @@
                         {{ 'codeCertificate'|get_plugin_lang('EasyCertificatePlugin') }}
                     </dt>
                     <dd class="code-cert">
+                        PROIKOS-{{ certificate.proikosCertCode }}
+                    </dd>
+                    <dd class="code-cert">
                         {{ certificate.urlBarCode }}
                     </dd>
                     <dd class="code-cert">
