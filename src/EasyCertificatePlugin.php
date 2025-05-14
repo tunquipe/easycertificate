@@ -509,12 +509,13 @@ class EasyCertificatePlugin extends Plugin
                     $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0, $row['session_id']);
 
                     $list   = [
+                        'id_certificate' => $row['id_certificate'],
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
                         'scoreCertificate' => $row['score_certificate'].$percentageValue.'<br>'.$simpleAverageNotCategory,
                         'codeCertificate' => md5($row['code_certificate']),
-                        'proikosCertCode' => str_pad($row['id_certificate'], 8, '0', STR_PAD_LEFT),
+                        'proikosCertCode' => self::getProikosCertCode($row['id_certificate']),
                         'urlBarCode' => $imgCodeBar,
                     ];
                 }
@@ -526,6 +527,11 @@ class EasyCertificatePlugin extends Plugin
         $url = api_get_path(WEB_PLUGIN_PATH).'easycertificate/search.php'.
                 '?type=view&c_cert='.$codeCertificate;
             header('Location: '.$url);
+    }
+
+    public static function getProikosCertCode($certId)
+    {
+        return str_pad($certId, 8, '0', STR_PAD_LEFT);
     }
 
     public static function getGenerateUrlImg($userId, $codeCertificate){
