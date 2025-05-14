@@ -322,8 +322,7 @@ foreach ($userList as $userInfo) {
         $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $codeCertificate['code_certificate_md5']);
         $myContentHtml = str_replace(
             '((qr-code))',
-            '
-            <span style="font-family: Arial, sans-serif; font-size: 9pt;">Código: ' . $proikosCertCorrelation . '</span> <br>' .
+            '<span style="font-family: Arial, sans-serif; font-size: 9pt;">Código: ' . $proikosCertCorrelation . '</span> <br>' .
             '<img src="data:image/png;base64,' . $certificateQR . '">'
             ,
             $myContentHtml
