@@ -693,6 +693,11 @@ class EasyCertificatePlugin extends Plugin
                 // Personaliza asunto según días
                 $courseInfo = api_get_course_info_by_id($row['course_id']);
                 $content = self::getInfoCertificateReminder($row['course_id'], $row['session_id'], api_get_current_access_url_id());
+
+                if (empty($content)) {
+                    $content = self::getInfoCertificateReminderDefault(api_get_current_access_url_id());
+                }
+
                 $content = str_replace(
                     ['((nombre_usuario))', '((nombre_curso))'],
                     ["{$firstname} {$lastname}", $courseInfo['name']],
