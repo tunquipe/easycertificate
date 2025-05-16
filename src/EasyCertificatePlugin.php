@@ -626,10 +626,10 @@ class EasyCertificatePlugin extends Plugin
         }
     }
 
-    public function expirationReminderContent()
+    public function expirationReminderContent($template)
     {
         $filepath = api_get_path(SYS_PLUGIN_PATH) . 'easycertificate/document/';
-        $filename = $filepath . 'expiration_reminder.html';
+        $filename = $filepath . $template . '.html';
 
         return file_get_contents($filename);
     }
@@ -638,16 +638,19 @@ class EasyCertificatePlugin extends Plugin
     {
         $tblSend = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
         $tblCert = Database::get_main_table(self::TABLE_EASYCERTIFICATE);
+        $tblCourse = Database::get_main_table(TABLE_MAIN_COURSE);
+        $tblGradebookCategory = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CATEGORY);
+        $tblGradebookCertificate = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CERTIFICATE);
         $tblUser = Database::get_main_table(TABLE_MAIN_USER);
 
         // Construimos dos bloques: uno para 30 días antes, otro para 15.
         $intervals = [
-            ['days' => 30, 'flag' => 'reminder_30_sent', 'flag_at' => 'reminder_30_sent_at'],
-            ['days' => 15, 'flag' => 'reminder_15_sent', 'flag_at' => 'reminder_15_sent_at'],
+            ['days' => 30, 'flag' => 'reminder_30_sent', 'flag_at' => 'reminder_30_sent_at', 'template' => 'expiration_reminder_30'],
+            ['days' => 15, 'flag' => 'reminder_15_sent', 'flag_at' => 'reminder_15_sent_at', 'template' => 'expiration_reminder_15'],
         ];
 
         foreach ($intervals as $iv) {
-            list($days, $flag, $flagAt) = [$iv['days'], $iv['flag'], $iv['flag_at']];
+            list($days, $flag, $flagAt, $template) = [$iv['days'], $iv['flag'], $iv['flag_at'], $iv['template']];
 
             // 1) Seleccionamos envíos que aún no tengan este recordatorio
             $sql = "
@@ -661,10 +664,11 @@ class EasyCertificatePlugin extends Plugin
                 u.lastname     AS lastname,
                 c.expiration_date
             FROM {$tblSend} AS s
-            INNER JOIN {$tblCert} AS c
-                ON s.certificate_id = c.id
-            INNER JOIN {$tblUser} AS u
-                ON u.user_id = s.user_id
+            INNER JOIN {$tblCert} AS c ON s.course_id = c.c_id AND s.session_id = c.session_id
+            INNER JOIN {$tblCourse} AS co ON co.id = s.course_id
+            INNER JOIN {$tblGradebookCategory} AS gc ON gc.course_code = co.code AND gc.session_id = s.session_id
+            INNER JOIN {$tblGradebookCertificate} AS ge ON ge.cat_id = gc.id AND ge.id = s.certificate_id AND ge.user_id = s.user_id
+            INNER JOIN {$tblUser} AS u ON u.user_id = s.user_id
             WHERE
                 c.expiration_date IS NOT NULL
                 /* Fecha de expiración real: s.created_at + INTERVAL c.expiration_date DAY */
@@ -692,12 +696,13 @@ class EasyCertificatePlugin extends Plugin
                 $lastname = $row['lastname'];
 
                 // Personaliza asunto según días
-                $subject = "Recordatorio: tu certificado #{$certId} vence en {$days} días";
+                $certIdSubject = self::getProikosCertCode($certId);
+                $subject = "Recordatorio: tu certificado PROIKOS-{$certIdSubject} vence en {$days} días";
                 api_mail_html(
                     "{$firstname} {$lastname}",
                     $email,
                     $subject,
-                    $this->expirationReminderContent($days)
+                    $this->expirationReminderContent($template)
                 );
 
                 // 3) Marcamos este recordatorio como enviado
