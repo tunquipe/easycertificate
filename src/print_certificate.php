@@ -62,7 +62,7 @@ if (empty($_GET['export_all']) && empty($_GET['export_all_in_one'])) {
     } else {
         $studentId = intval($_GET['student_id']);
     }
-    $userList[] = api_get_user_info($studentId);
+    $userList[] = getUserInfo($studentId);
 } else {
 
     if (!empty($_GET['export_all'])) {
@@ -74,7 +74,7 @@ if (empty($_GET['export_all']) && empty($_GET['export_all_in_one'])) {
 
     $certificate_list = GradebookUtils::get_list_users_certificates($categoryId);
     foreach ($certificate_list as $index => $value) {
-        $userList[] = api_get_user_info($value['user_id']);
+        $userList[] = getUserInfo($value['user_id']);
     }
 }
 
@@ -264,8 +264,56 @@ foreach ($userList as $userInfo) {
         $myContentHtml
     );
 
+    $validFrom = date('d/m/Y');
+    $daysExpiration = $infoCertificate['expiration_date'];
+
+    $myContentHtml = str_replace(
+        '((valid_from))',
+        $validFrom,
+        $myContentHtml
+    );
+
+    $validTo = '';
+    if (!empty($daysExpiration)) {
+        $validTo = date('d/m/Y', strtotime(date('Y-m-d') . ' + ' . $daysExpiration . ' days'));
+    }
+
+    $myContentHtml = str_replace(
+        '((expiration_date))',
+        $validTo,
+        $myContentHtml
+    );
+
+    $certificatesTrabajoAltoRiesgo = getCertificatesTrabajoAltoRiesgo(
+        $userInfo['metadata'],
+        $sessionId
+    );
+
+    $htmlCertificatesTrabajoAltoRiesgo = '';
+    if (!empty($certificatesTrabajoAltoRiesgo)) {
+        $htmlCertificatesTrabajoAltoRiesgo = '
+        <div style="margin-top: 20px; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.4;">
+            <div><strong>Certificados adicionales:</strong></div>';
+
+        foreach ($certificatesTrabajoAltoRiesgo as $certificate) {
+            $htmlCertificatesTrabajoAltoRiesgo .= '
+            <div style="margin-left: 15px;">' . $certificate . '</div>';
+        }
+
+        $htmlCertificatesTrabajoAltoRiesgo .= '
+        </div>';
+    }
+
+    $myContentHtml = str_replace(
+        '((attach_certificates_alto_riesgo))',
+        $htmlCertificatesTrabajoAltoRiesgo,
+        $myContentHtml
+    );
+
     $codeCertificate = EasyCertificatePlugin::getCodeCertificate($catId, $studentId);
     if (!empty($codeCertificate)) {
+        $certificateValidate = EasyCertificatePlugin::getGenerateInfoCertificate(true, $codeCertificate['code_certificate_md5'], false);
+        $proikosCertCorrelation = EasyCertificatePlugin::getProikosCertCode($codeCertificate['id_certificate']);
         $myContentHtml = str_replace(
             '((code_certificate))',
             strtoupper($codeCertificate['code_certificate_md5']),
@@ -274,6 +322,7 @@ foreach ($userList as $userInfo) {
         $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $codeCertificate['code_certificate_md5']);
         $myContentHtml = str_replace(
             '((qr-code))',
+            '<span style="font-family: Arial, sans-serif; font-size: 9pt;">Código: ' . $proikosCertCorrelation . '</span> <br>' .
             '<img src="data:image/png;base64,' . $certificateQR . '">'
             ,
             $myContentHtml
@@ -424,5 +473,48 @@ function getIndexFiltered($index): string
     return $result;
 }
 
+function getUserInfo($studentId) {
+    $userInfo = api_get_user_info($studentId);
+    $allowProikos = api_get_plugin_setting('proikos', 'tool_enable') === 'true';
+    $userInfo['metadata'] = [];
+    if ($allowProikos) {
+        $pluginProikos = ProikosPlugin::create();
+        $userMetadata = $pluginProikos->getUserMetadata($studentId);
 
+        if (empty($userMetadata) || !is_array($userMetadata) || $userMetadata == 'null') {
+            $userMetadata = [];
+        }
 
+        $userInfo['metadata'] = $userMetadata;
+    }
+
+    return $userInfo;
+}
+
+function getCertificatesTrabajoAltoRiesgo($userMetadata, $sessionId)
+{
+    $certificates = [];
+    if (empty($userMetadata) || !isset($userMetadata['attachments']) || !is_array($userMetadata['attachments'])) {
+        return $certificates;
+    }
+
+    if (empty($userMetadata['attachments'])) {
+        return $certificates;
+    }
+
+    foreach ($userMetadata['attachments'] as $attachment) {
+        if ($attachment['session_id'] != $sessionId) {
+            continue;
+        }
+
+        if (empty($attachment['optional_request_attach_certificates'])) {
+            continue;
+        }
+
+        foreach ($attachment['optional_request_attach_certificates'] as $certificate) {
+            $certificates[] = $certificate;
+        }
+    }
+
+    return $certificates;
+}

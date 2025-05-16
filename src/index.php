@@ -364,6 +364,7 @@ $listTags = [
     'bar_code',
     'valid_from',
     'expiration_date',
+    'attach_certificates_alto_riesgo'
 ];
 
 $strInfo = '<ul class="list-tags">';
