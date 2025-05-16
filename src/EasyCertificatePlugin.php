@@ -12,6 +12,7 @@ use Endroid\QrCode\QrCode;
 class EasyCertificatePlugin extends Plugin
 {
     const TABLE_EASYCERTIFICATE = 'plugin_easycertificate';
+    const TABLE_EASYCERTIFICATE_REMINDER = 'plugin_easycertificate_reminder';
     const TABLE_EASYCERTIFICATE_SEND = 'plugin_easycertificate_send';
     public $isCoursePlugin = true;
 
@@ -626,14 +627,6 @@ class EasyCertificatePlugin extends Plugin
         }
     }
 
-    public function expirationReminderContent($template)
-    {
-        $filepath = api_get_path(SYS_PLUGIN_PATH) . 'easycertificate/document/';
-        $filename = $filepath . $template . '.html';
-
-        return file_get_contents($filename);
-    }
-
     public function sendExpirationReminder()
     {
         $tblSend = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
@@ -645,8 +638,8 @@ class EasyCertificatePlugin extends Plugin
 
         // Construimos dos bloques: uno para 30 días antes, otro para 15.
         $intervals = [
-            ['days' => 30, 'flag' => 'reminder_30_sent', 'flag_at' => 'reminder_30_sent_at', 'template' => 'expiration_reminder_30'],
-            ['days' => 15, 'flag' => 'reminder_15_sent', 'flag_at' => 'reminder_15_sent_at', 'template' => 'expiration_reminder_15'],
+            ['days' => 30, 'flag' => 'reminder_30_sent', 'flag_at' => 'reminder_30_sent_at', 'template' => 'content_30'],
+            ['days' => 15, 'flag' => 'reminder_15_sent', 'flag_at' => 'reminder_15_sent_at', 'template' => 'content_15'],
         ];
 
         foreach ($intervals as $iv) {
@@ -662,7 +655,9 @@ class EasyCertificatePlugin extends Plugin
                 s.created_at   AS issued_at,
                 u.firstname    AS firstname,
                 u.lastname     AS lastname,
-                c.expiration_date
+                c.expiration_date,
+                s.course_id,
+                s.session_id
             FROM {$tblSend} AS s
             INNER JOIN {$tblCert} AS c ON s.course_id = c.c_id AND s.session_id = c.session_id
             INNER JOIN {$tblCourse} AS co ON co.id = s.course_id
@@ -696,13 +691,21 @@ class EasyCertificatePlugin extends Plugin
                 $lastname = $row['lastname'];
 
                 // Personaliza asunto según días
+                $courseInfo = api_get_course_info_by_id($row['course_id']);
+                $content = self::getInfoCertificateReminder($row['course_id'], $row['session_id'], api_get_current_access_url_id());
+                $content = str_replace(
+                    ['((nombre_usuario))', '((nombre_curso))'],
+                    ["{$firstname} {$lastname}", $courseInfo['name']],
+                    $content[$template] ?? ''
+                );
+
                 $certIdSubject = self::getProikosCertCode($certId);
                 $subject = "Recordatorio: tu certificado PROIKOS-{$certIdSubject} vence en {$days} días";
                 api_mail_html(
                     "{$firstname} {$lastname}",
                     $email,
                     $subject,
-                    $this->expirationReminderContent($template)
+                    $content
                 );
 
                 // 3) Marcamos este recordatorio como enviado
@@ -715,5 +718,51 @@ class EasyCertificatePlugin extends Plugin
                 Database::query($updateSql);
             }
         }
+    }
+
+    public static function getInfoCertificateReminder($courseId, $sessionId, $accessUrlId)
+    {
+        $courseId = (int) $courseId;
+        $sessionId = (int) $sessionId;
+        $accessUrlId = !empty($accessUrlId) ? (int) $accessUrlId : 1;
+
+        $table = Database::get_main_table(self::TABLE_EASYCERTIFICATE_REMINDER);
+        $sql = "SELECT * FROM $table
+                WHERE
+                    c_id = $courseId AND
+                    session_id = $sessionId AND
+                    access_url_id = $accessUrlId";
+        $result = Database::query($sql);
+        $resultArray = [];
+        if (Database::num_rows($result) > 0) {
+            while ($row = Database::fetch_array($result)) {
+                $resultArray = [
+                    'id' => $row['id'],
+                    'access_url_id' => $row['access_url_id'],
+                    'session_id' => $row['session_id'],
+                    'c_id' => $row['c_id'],
+                    'content_30' => $row['content_30'],
+                    'content_15' => $row['content_15']
+                ];
+            }
+        }
+
+        return $resultArray;
+    }
+
+    public static function getInfoCertificateReminderDefault($accessUrlId)
+    {
+        $accessUrlId = !empty($accessUrlId) ? (int) $accessUrlId : 1;
+
+        $table = Database::get_main_table(self::TABLE_EASYCERTIFICATE_REMINDER);
+        $sql = "SELECT * FROM $table
+                WHERE certificate_default = 1 AND access_url_id = $accessUrlId";
+        $result = Database::query($sql);
+        $resultArray = [];
+        if (Database::num_rows($result) > 0) {
+            $resultArray = Database::fetch_array($result);
+        }
+
+        return $resultArray;
     }
 }
