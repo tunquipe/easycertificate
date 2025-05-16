@@ -1,10 +1,47 @@
 <?php
 
-require_once __DIR__ . '/../config.php';
+$isDefault = isset($_GET['default']) ? (int) $_GET['default'] : null;
 
+if ($isDefault === 1) {
+    $cidReset = true;
+}
+
+require_once __DIR__ . '/../config.php';
 $plugin = EasyCertificatePlugin::create();
 $nameTools = $plugin->get_lang('CertificateSetting');
 $enable = $plugin->get('enable_plugin_easycertificate') == 'true';
+$course_info = api_get_course_info();
+
+if ($isDefault === 1) {
+    $courseId = 0;
+    $courseCode = '';
+    $sessionId = 0;
+    $enableCourse = false;
+    $useDefault = true;
+    $defaultCertificate = 1;
+    $nameTools = $plugin->get_lang('CertificateSettingDefault');
+    $urlParams = '?default=1&demo=true';
+} else {
+    $courseId = api_get_course_int_id();
+    $courseCode = api_get_course_id();
+    $sessionId = api_get_session_id();
+    $enableCourse = api_get_course_setting('easycertificate_course_enable', $course_info) == 1;
+    $useDefault = api_get_course_setting('use_certificate_default', $course_info) == 1;
+    $defaultCertificate = 0;
+    $urlParams = '?'.api_get_cidreq();
+}
+
+if (!$enable) {
+    api_not_allowed(true, $plugin->get_lang('ToolDisabled'));
+}
+
+if (!$enableCourse && !$useDefault) {
+    api_not_allowed(true, $plugin->get_lang('ToolDisabledCourse'));
+}
+
+if ($enableCourse && $useDefault) {
+    api_not_allowed(true, $plugin->get_lang('ToolUseDefaultSettingCourse'));
+}
 
 $message = null;
 $actionsLeft = Display::url(
@@ -22,10 +59,14 @@ $actions = Display::toolbarAction(
 $pathFile = api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/document/';
 $baseHref = api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/document/';
 
+$accessUrlId = api_get_current_access_url_id();
+// Get info certificate
+$infoCertificate = EasyCertificatePlugin::getInfoCertificateReminder($courseId, $sessionId, $accessUrlId);
+
 $form = new FormValidator(
     'form_expiration_reminder',
     'post',
-    api_get_self(),
+    api_get_self() . $urlParams,
     null
 );
 
@@ -66,6 +107,9 @@ $form->addHtmlEditor(
 );
 $form->addHtml('</div><div class="col-md-2"></div></div>');
 
+$form->addElement('hidden', 'c_id', $courseId);
+$form->addElement('hidden', 'session_id', $sessionId);
+
 $form->addButton(
     'submit',
     get_lang('SaveMessage'),
@@ -77,44 +121,46 @@ $form->addButton(
         'cols-size' => [2, 8, 2]
     ]
 );
-$filepath = api_get_path(SYS_PLUGIN_PATH) . 'easycertificate/document/';
-$filename30 = $filepath . 'expiration_reminder_30.html';
-$filename15 = $filepath . 'expiration_reminder_15.html';
+
+$table = Database::get_main_table(EasyCertificatePlugin::TABLE_EASYCERTIFICATE_REMINDER);
+
 if ($form->validate()) {
-    $values = $form->getSubmitValues();
-    //save content
-    if (!file_exists($filepath . $filename30)) {
-        $content = stripslashes($values['content_30']);
-        file_put_contents($filename30, $content);
+    $formValues = $form->getSubmitValues();
+
+    $params = [
+        'access_url_id' => api_get_current_access_url_id(),
+        'c_id' => $formValues['c_id'],
+        'session_id' => $formValues['session_id'],
+        'content_30' => $formValues['content_30'],
+        'content_15' => $formValues['content_15'],
+        'certificate_default' => $isDefault
+    ];
+
+    // Insert or Update
+    if ($infoCertificate['id'] > 0) {
+        $certificateId = $infoCertificate['id'];
+        Database::update($table, $params, ['id = ?' => $certificateId]);
+    } else {
+        $certificateId = Database::insert($table, $params);
     }
-    if (!file_exists($filepath . $filename15)) {
-        $content = stripslashes($values['content_15']);
-        file_put_contents($filename15, $content);
-    }
-} else {
-    if (file_exists($filename30)) {
-        $content = file_get_contents($filename30);
-        $values = [
-            'content_30' => $content
-        ];
-        try {
-            $form->setDefaults($values);
-        } catch (Exception $e) {
-            print_r($e);
-        }
-    }
-    if (file_exists($filename15)) {
-        $content = file_get_contents($filename15);
-        $values = [
-            'content_15' => $content
-        ];
-        try {
-            $form->setDefaults($values);
-        } catch (Exception $e) {
-            print_r($e);
-        }
-    }
+
+    Display::addFlash(Display::return_message(get_lang('Saved')));
+
+    header('Location: '.api_get_self().$urlParams);
+    exit;
 }
+
+if (empty($infoCertificate)) {
+    $infoCertificate = EasyCertificatePlugin::getInfoCertificateReminderDefault($accessUrlId);
+    $useDefault = true;
+}
+
+$form->setDefaults([
+    'content_30' => $infoCertificate['content_30'],
+    'content_15' => $infoCertificate['content_15'],
+    'c_id' => $courseId,
+    'session_id' => $sessionId
+]);
 
 $tpl = new Template($nameTools, true, true, false, false, true, false);
 $tpl->assign('actions', $actions);
