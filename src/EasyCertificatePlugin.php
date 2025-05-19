@@ -86,7 +86,26 @@ class EasyCertificatePlugin extends Plugin
             user_id INT,
             course_id INT,
             session_id INT NULL,
-            certificate_id INT NULL
+            certificate_id INT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            reminder_30_sent     TINYINT(1)    NOT NULL DEFAULT 0,
+            reminder_30_sent_at  DATETIME       NULL,
+            reminder_15_sent     TINYINT(1)    NOT NULL DEFAULT 0,
+            reminder_15_sent_at  DATETIME       NULL
+        )";
+        Database::query($sql);
+
+        $sql = "CREATE TABLE IF NOT EXISTS " . self::TABLE_EASYCERTIFICATE_REMINDER . " (
+          id int unsigned NOT NULL AUTO_INCREMENT,
+          access_url_id int unsigned NOT NULL,
+          c_id int unsigned NOT NULL,
+          session_id int unsigned NOT NULL,
+          content_30 longtext COLLATE utf8mb3_unicode_ci NOT NULL,
+          content_15 longtext COLLATE utf8mb3_unicode_ci NOT NULL,
+          certificate_default int unsigned DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`)
         )";
         Database::query($sql);
     }
@@ -651,25 +670,32 @@ class EasyCertificatePlugin extends Plugin
                 s.id           AS send_id,
                 s.user_id      AS user_id,
                 u.email        AS email,
-                c.id           AS certificate_id,
+                ge.id          AS certificate_id,
                 s.created_at   AS issued_at,
                 u.firstname    AS firstname,
                 u.lastname     AS lastname,
-                c.expiration_date,
+                COALESCE(c1.expiration_date, c2.expiration_date) AS expiration_date,
                 s.course_id,
                 s.session_id
             FROM {$tblSend} AS s
-            INNER JOIN {$tblCert} AS c ON s.course_id = c.c_id AND s.session_id = c.session_id
+
+            -- Intentamos hacer match con certificado real
+            LEFT JOIN {$tblCert} AS c1
+                ON s.course_id = c1.c_id AND s.session_id = c1.session_id
+
+            -- Si no hay match, usamos el certificado por defecto
+            LEFT JOIN {$tblCert} AS c2
+                ON c1.id IS NULL AND c2.c_id = 0 AND c2.session_id = 0
+
             INNER JOIN {$tblCourse} AS co ON co.id = s.course_id
             INNER JOIN {$tblGradebookCategory} AS gc ON gc.course_code = co.code AND gc.session_id = s.session_id
             INNER JOIN {$tblGradebookCertificate} AS ge ON ge.cat_id = gc.id AND ge.id = s.certificate_id AND ge.user_id = s.user_id
             INNER JOIN {$tblUser} AS u ON u.user_id = s.user_id
+
             WHERE
-                c.expiration_date IS NOT NULL
-                /* Fecha de expiración real: s.created_at + INTERVAL c.expiration_date DAY */
-                /* Límite para este recordatorio: {$days} días antes */
+                COALESCE(c1.expiration_date, c2.expiration_date) IS NOT NULL
                 AND NOW() >= DATE_SUB(
-                    DATE_ADD(s.created_at, INTERVAL c.expiration_date DAY),
+                    DATE_ADD(s.created_at, INTERVAL COALESCE(c1.expiration_date, c2.expiration_date) DAY),
                     INTERVAL {$days} DAY
                 )
                 /* No lo hemos enviado todavía */
