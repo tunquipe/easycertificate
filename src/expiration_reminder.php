@@ -85,9 +85,13 @@ $editorConfigOne = [
     'BaseHref' => $baseHref,
 ];
 $form->addHtml('<div class="row"> <h3> Recordatorio 30 días antes: </h3> </div>');
-$form->addSelectLanguage(
+$form->addSelect(
     'lang_content_30',
-    get_lang('Language')
+    get_lang('Language'),
+    [
+        'spanish' => 'Español',
+        'english' => 'English'
+    ]
 );
 $form->addHtml(
     <<<EOT
@@ -131,9 +135,13 @@ $form->addHtmlEditor(
 $form->addHtml('</div><div class="col-md-2"></div></div>');
 
 $form->addHtml('<div class="row"> <h3> Recordatorio 15 días antes: </h3> </div>');
-$form->addSelectLanguage(
+$form->addSelect(
     'lang_content_15',
-    get_lang('Language')
+    get_lang('Language'),
+    [
+        'spanish' => 'Español',
+        'english' => 'English'
+    ]
 );
 $form->addHtml(
     <<<EOT
