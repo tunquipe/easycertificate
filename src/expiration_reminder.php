@@ -84,9 +84,32 @@ $editorConfigOne = [
     'CreateDocumentWebDir' => $pathFile,
     'BaseHref' => $baseHref,
 ];
-//$form->addText('title',get_lang('Title'));
 $form->addHtml('<div class="row"> <h3> Recordatorio 30 días antes: </h3> </div>');
-$form->addHtml('<div class="row"><div class="col-md-2"></div><div class="col-md-8">');
+$form->addSelectLanguage(
+    'lang_content_30',
+    get_lang('Language')
+);
+$form->addHtml(
+    <<<EOT
+<script>
+    $(document).ready(function() {
+        $('select[name="lang_content_30"]').change(function() {
+            var selectedLang = $(this).val();
+            if (selectedLang == 'spanish') {
+                $('#container_es_content_30').show();
+                $('#container_en_content_30').hide();
+            } else {
+                $('#container_es_content_30').hide();
+                $('#container_en_content_30').show();
+            }
+        });
+    });
+</script>
+EOT
+);
+
+// Spanish Content 30
+$form->addHtml('<div class="row" id="container_es_content_30"><div class="col-md-2"></div><div class="col-md-8">');
 $form->addHtmlEditor(
     'content_30',
     '',
@@ -96,10 +119,56 @@ $form->addHtmlEditor(
 );
 $form->addHtml('</div><div class="col-md-2"></div></div>');
 
+// English Content 30
+$form->addHtml('<div class="row" id="container_en_content_30" style="display: none;"><div class="col-md-2"></div><div class="col-md-8">');
+$form->addHtmlEditor(
+    'en_content_30',
+    '',
+    false,
+    true,
+    $editorConfigOne
+);
+$form->addHtml('</div><div class="col-md-2"></div></div>');
+
 $form->addHtml('<div class="row"> <h3> Recordatorio 15 días antes: </h3> </div>');
-$form->addHtml('<div class="row"><div class="col-md-2"></div><div class="col-md-8">');
+$form->addSelectLanguage(
+    'lang_content_15',
+    get_lang('Language')
+);
+$form->addHtml(
+    <<<EOT
+<script>
+    $(document).ready(function() {
+        $('select[name="lang_content_15"]').change(function() {
+            var selected15Lang = $(this).val();
+            if (selected15Lang == 'spanish') {
+                $('#container_es_content_15').show();
+                $('#container_en_content_15').hide();
+            } else {
+                $('#container_es_content_15').hide();
+                $('#container_en_content_15').show();
+            }
+        });
+    });
+</script>
+EOT
+);
+
+// Spanish Content 15
+$form->addHtml('<div class="row" id="container_es_content_15"><div class="col-md-2"></div><div class="col-md-8">');
 $form->addHtmlEditor(
     'content_15',
+    '',
+    false,
+    true,
+    $editorConfigOne
+);
+$form->addHtml('</div><div class="col-md-2"></div></div>');
+
+// English Content 15
+$form->addHtml('<div class="row" id="container_en_content_15" style="display: none;"><div class="col-md-2"></div><div class="col-md-8">');
+$form->addHtmlEditor(
+    'en_content_15',
     '',
     false,
     true,
@@ -132,7 +201,9 @@ if ($form->validate()) {
         'c_id' => $formValues['c_id'],
         'session_id' => $formValues['session_id'],
         'content_30' => $formValues['content_30'],
+        'en_content_30' => $formValues['en_content_30'],
         'content_15' => $formValues['content_15'],
+        'en_content_15' => $formValues['en_content_15'],
         'certificate_default' => $isDefault
     ];
 
@@ -158,6 +229,8 @@ if (empty($infoCertificate)) {
 $form->setDefaults([
     'content_30' => $infoCertificate['content_30'],
     'content_15' => $infoCertificate['content_15'],
+    'en_content_30' => $infoCertificate['en_content_30'],
+    'en_content_15' => $infoCertificate['en_content_15'],
     'c_id' => $courseId,
     'session_id' => $sessionId
 ]);
