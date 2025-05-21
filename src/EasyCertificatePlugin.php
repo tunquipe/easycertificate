@@ -715,6 +715,8 @@ class EasyCertificatePlugin extends Plugin
                 $certId   = (int) $row['certificate_id'];
                 $firstname= $row['firstname'];
                 $lastname = $row['lastname'];
+                $userInfo = api_get_user_info($row['user_id'], false, false, true, true, false, true);
+                $langPrefix = $userInfo['language'] === 'english' ? 'en_' : '';
 
                 // Personaliza asunto según días
                 $courseInfo = api_get_course_info_by_id($row['course_id']);
@@ -727,7 +729,7 @@ class EasyCertificatePlugin extends Plugin
                 $content = str_replace(
                     ['((nombre_usuario))', '((nombre_curso))'],
                     ["{$firstname} {$lastname}", $courseInfo['name']],
-                    $content[$template] ?? ''
+                    $content[$langPrefix . $template] ?? ''
                 );
 
                 $certIdSubject = self::getProikosCertCode($certId);
@@ -773,7 +775,9 @@ class EasyCertificatePlugin extends Plugin
                     'session_id' => $row['session_id'],
                     'c_id' => $row['c_id'],
                     'content_30' => $row['content_30'],
-                    'content_15' => $row['content_15']
+                    'content_15' => $row['content_15'],
+                    'en_content_30' => $row['en_content_30'],
+                    'en_content_15' => $row['en_content_15']
                 ];
             }
         }
