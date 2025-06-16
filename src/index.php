@@ -553,6 +553,7 @@ $form->addSelect(
     $plugin->get_lang('ExpirationDateContractor'),
     [
         '' => '- Sin Fecha de Expiración -',
+        '7' => '1 semana',
         '30' => '1 mes',
         '90' => '3 meses',
         '365' => '1 año',

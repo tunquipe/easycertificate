@@ -12,6 +12,7 @@ use Endroid\QrCode\QrCode;
 class EasyCertificatePlugin extends Plugin
 {
     const TABLE_EASYCERTIFICATE = 'plugin_easycertificate';
+    const TABLE_EASYCERTIFICATE_REMINDER = 'plugin_easycertificate_reminder';
     const TABLE_EASYCERTIFICATE_SEND = 'plugin_easycertificate_send';
     public $isCoursePlugin = true;
 
@@ -85,7 +86,26 @@ class EasyCertificatePlugin extends Plugin
             user_id INT,
             course_id INT,
             session_id INT NULL,
-            certificate_id INT NULL
+            certificate_id INT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            reminder_30_sent     TINYINT(1)    NOT NULL DEFAULT 0,
+            reminder_30_sent_at  DATETIME       NULL,
+            reminder_15_sent     TINYINT(1)    NOT NULL DEFAULT 0,
+            reminder_15_sent_at  DATETIME       NULL
+        )";
+        Database::query($sql);
+
+        $sql = "CREATE TABLE IF NOT EXISTS " . self::TABLE_EASYCERTIFICATE_REMINDER . " (
+          id int unsigned NOT NULL AUTO_INCREMENT,
+          access_url_id int unsigned NOT NULL,
+          c_id int unsigned NOT NULL,
+          session_id int unsigned NOT NULL,
+          content_30 longtext COLLATE utf8mb3_unicode_ci NOT NULL,
+          content_15 longtext COLLATE utf8mb3_unicode_ci NOT NULL,
+          certificate_default int unsigned DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`)
         )";
         Database::query($sql);
     }
@@ -510,12 +530,13 @@ class EasyCertificatePlugin extends Plugin
                     $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0, $row['session_id']);
 
                     $list   = [
+                        'id_certificate' => $row['id_certificate'],
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
                         'scoreCertificate' => $row['score_certificate'].$percentageValue.'<br>'.$simpleAverageNotCategory,
                         'codeCertificate' => md5($row['code_certificate']),
-                        'proikosCertCode' => str_pad($row['id_certificate'], 8, '0', STR_PAD_LEFT),
+                        'proikosCertCode' => self::getProikosCertCode($row['id_certificate']),
                         'urlBarCode' => $imgCodeBar,
                     ];
                 }
@@ -527,6 +548,11 @@ class EasyCertificatePlugin extends Plugin
         $url = api_get_path(WEB_PLUGIN_PATH).'easycertificate/search.php'.
                 '?type=view&c_cert='.$codeCertificate;
             header('Location: '.$url);
+    }
+
+    public static function getProikosCertCode($certId)
+    {
+        return str_pad($certId, 8, '0', STR_PAD_LEFT);
     }
 
     public static function getGenerateUrlImg($userId, $codeCertificate){
@@ -634,71 +660,154 @@ class EasyCertificatePlugin extends Plugin
         // Tablas principales (usar constantes o definir si no existen)
         $tblSend = Database::get_main_table(self::TABLE_EASYCERTIFICATE_SEND);
         $tblCert = Database::get_main_table(self::TABLE_EASYCERTIFICATE);
+        $tblCourse = Database::get_main_table(TABLE_MAIN_COURSE);
+        $tblGradebookCategory = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CATEGORY);
+        $tblGradebookCertificate = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CERTIFICATE);
         $tblUser = Database::get_main_table(TABLE_MAIN_USER);
 
-        // 1) Recuperar envíos pendientes de recordatorio
-        //    - expiration_date < ahora (Unix timestamp)
-        //    - expiration_reminder_sent = 0
-        $sql = "
-             SELECT
-            s.id             AS send_id,
-            s.user_id        AS user_id,
-            u.email          AS email,
-            c.id             AS certificate_id,
-            s.created_at     AS issued_at,
-            u.firstname     AS firstname,
-            u.lastname     AS lastname,
-            c.expiration_date_contractor
-        FROM {$tblSend} AS s
-        INNER JOIN {$tblCert} AS c
-            ON s.certificate_id = c.id
-        INNER JOIN {$tblUser} AS u
-            ON u.user_id = s.user_id
-        WHERE
-            c.expiration_date_contractor IS NOT NULL
-            /* Fecha de expiración real: s.created_at + INTERVAL c.expiration_date DAY */
-            /* Fecha de envío de recordatorio: 30 días antes de eso */
-            AND NOW() >= DATE_SUB(
-                DATE_ADD(s.created_at, INTERVAL c.expiration_date_contractor DAY),
-                INTERVAL 30 DAY
-            )
-            AND s.expiration_reminder_sent = 0;
+        // Construimos dos bloques: uno para 30 días antes, otro para 15.
+        $intervals = [
+            ['days' => 30, 'flag' => 'reminder_30_sent', 'flag_at' => 'reminder_30_sent_at', 'template' => 'content_30'],
+            ['days' => 15, 'flag' => 'reminder_15_sent', 'flag_at' => 'reminder_15_sent_at', 'template' => 'content_15'],
+        ];
+
+        foreach ($intervals as $iv) {
+            list($days, $flag, $flagAt, $template) = [$iv['days'], $iv['flag'], $iv['flag_at'], $iv['template']];
+
+            // 1) Seleccionamos envíos que aún no tengan este recordatorio
+            $sql = "
+            SELECT
+                s.id           AS send_id,
+                s.user_id      AS user_id,
+                u.email        AS email,
+                ge.id          AS certificate_id,
+                s.created_at   AS issued_at,
+                u.firstname    AS firstname,
+                u.lastname     AS lastname,
+                COALESCE(c1.expiration_date, c2.expiration_date) AS expiration_date,
+                s.course_id,
+                s.session_id
+            FROM {$tblSend} AS s
+
+            -- Intentamos hacer match con certificado real
+            LEFT JOIN {$tblCert} AS c1
+                ON s.course_id = c1.c_id AND s.session_id = c1.session_id
+
+            -- Si no hay match, usamos el certificado por defecto
+            LEFT JOIN {$tblCert} AS c2
+                ON c1.id IS NULL AND c2.c_id = 0 AND c2.session_id = 0
+
+            INNER JOIN {$tblCourse} AS co ON co.id = s.course_id
+            INNER JOIN {$tblGradebookCategory} AS gc ON gc.course_code = co.code AND gc.session_id = s.session_id
+            INNER JOIN {$tblGradebookCertificate} AS ge ON ge.cat_id = gc.id AND ge.id = s.certificate_id AND ge.user_id = s.user_id
+            INNER JOIN {$tblUser} AS u ON u.user_id = s.user_id
+
+            WHERE
+                COALESCE(c1.expiration_date, c2.expiration_date) IS NOT NULL
+                AND NOW() >= DATE_SUB(
+                    DATE_ADD(s.created_at, INTERVAL COALESCE(c1.expiration_date, c2.expiration_date) DAY),
+                    INTERVAL {$days} DAY
+                )
+                /* No lo hemos enviado todavía */
+                AND s.{$flag} = 0
         ";
 
-        $res = Database::query($sql);
+            $res = Database::query($sql);
+            if (Database::num_rows($res) === 0) {
+                continue;
+            }
 
-        if (Database::num_rows($res) === 0) {
-            return;
-        }
+            // 2) Iteramos y enviamos
+            while ($row = Database::fetch_array($res, 'ASSOC')) {
+                $sendId   = (int) $row['send_id'];
+                $userId   = (int) $row['user_id'];
+                $email    = $row['email'];
+                $certId   = (int) $row['certificate_id'];
+                $firstname= $row['firstname'];
+                $lastname = $row['lastname'];
+                $userInfo = api_get_user_info($row['user_id'], false, false, true, true, false, true);
+                $langPrefix = $userInfo['language'] === 'english' ? 'en_' : '';
 
-        // 2) Iterar y enviar recordatorios
-        while ($row = Database::fetch_array($res, 'ASSOC')) {
-            $sendId  = (int) $row['send_id'];
-            $userId  = (int) $row['user_id'];
-            $email   = $row['email'];
-            $certId  = (int) $row['certificate_id'];
-            $firstname   = $row['firstname'];
-            $lastname   = $row['lastname'];
-            //$expDate = date('Y-m-d', $expTs);
+                // Personaliza asunto según días
+                $courseInfo = api_get_course_info_by_id($row['course_id']);
+                $content = self::getInfoCertificateReminder($row['course_id'], $row['session_id'], api_get_current_access_url_id());
 
-            // Preparar email
-            $subject = "Recordatorio: tu certificado #{$certId} ha expirado";
-            api_mail_html(
-                $firstname . ' ' . $lastname,
-                $email,
-                $subject,
-                $this->expirationReminderContent()
-            );
+                if (empty($content)) {
+                    $content = self::getInfoCertificateReminderDefault(api_get_current_access_url_id());
+                }
 
-            // 3) Marcar como enviado
-            $updateSql = "
-            UPDATE {$tblSend}
-               SET expiration_reminder_sent    = 1,
-                   expiration_reminder_sent_at = NOW()
-             WHERE id = {$sendId}
-        ";
-            Database::query($updateSql);
+                $content = str_replace(
+                    ['((nombre_usuario))', '((nombre_curso))'],
+                    ["{$firstname} {$lastname}", $courseInfo['name']],
+                    $content[$langPrefix . $template] ?? ''
+                );
+
+                $certIdSubject = self::getProikosCertCode($certId);
+                $subject = "Recordatorio: tu certificado PROIKOS-{$certIdSubject} vence en {$days} días";
+                api_mail_html(
+                    "{$firstname} {$lastname}",
+                    $email,
+                    $subject,
+                    $content
+                );
+
+                // 3) Marcamos este recordatorio como enviado
+                $updateSql = "
+                UPDATE {$tblSend}
+                   SET {$flag}    = 1,
+                       {$flagAt} = NOW()
+                 WHERE id = {$sendId}
+            ";
+                Database::query($updateSql);
+            }
         }
     }
 
+    public static function getInfoCertificateReminder($courseId, $sessionId, $accessUrlId)
+    {
+        $courseId = (int) $courseId;
+        $sessionId = (int) $sessionId;
+        $accessUrlId = !empty($accessUrlId) ? (int) $accessUrlId : 1;
+
+        $table = Database::get_main_table(self::TABLE_EASYCERTIFICATE_REMINDER);
+        $sql = "SELECT * FROM $table
+                WHERE
+                    c_id = $courseId AND
+                    session_id = $sessionId AND
+                    access_url_id = $accessUrlId";
+        $result = Database::query($sql);
+        $resultArray = [];
+        if (Database::num_rows($result) > 0) {
+            while ($row = Database::fetch_array($result)) {
+                $resultArray = [
+                    'id' => $row['id'],
+                    'access_url_id' => $row['access_url_id'],
+                    'session_id' => $row['session_id'],
+                    'c_id' => $row['c_id'],
+                    'content_30' => $row['content_30'],
+                    'content_15' => $row['content_15'],
+                    'en_content_30' => $row['en_content_30'],
+                    'en_content_15' => $row['en_content_15']
+                ];
+            }
+        }
+
+        return $resultArray;
+    }
+
+    public static function getInfoCertificateReminderDefault($accessUrlId)
+    {
+        $accessUrlId = !empty($accessUrlId) ? (int) $accessUrlId : 1;
+
+        $table = Database::get_main_table(self::TABLE_EASYCERTIFICATE_REMINDER);
+        $sql = "SELECT * FROM $table
+                WHERE certificate_default = 1 AND access_url_id = $accessUrlId";
+        $result = Database::query($sql);
+        $resultArray = [];
+        if (Database::num_rows($result) > 0) {
+            $resultArray = Database::fetch_array($result);
+        }
+
+        return $resultArray;
+    }
 }
