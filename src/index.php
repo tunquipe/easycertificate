@@ -137,6 +137,7 @@ if ($form->validate()) {
             'margin_top' => (int) $formValues['margin_top'],
             'margin_bottom' => (int) $formValues['margin_bottom'],
             'expiration_date_contractor' => !empty($formValues['expiration_date_contractor']) ? (int) $formValues['expiration_date_contractor'] : null,
+            'expiration_date_petroperu' => !empty($formValues['expiration_date_petroperu']) ? (int) $formValues['expiration_date_petroperu'] : null,
             'certificate_default' => 0,
             'show_back' => $showBack,
             'date_change' => (int) $formValues['date_change']
@@ -568,6 +569,7 @@ $form->addSelect(
         '90' => '3 meses',
         '365' => '1 año',
         '730' => '2 años',
+        '1095' => '3 años',
     ]
 );
 
