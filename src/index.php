@@ -136,7 +136,7 @@ if ($form->validate()) {
             'margin_right' => (int) $formValues['margin_right'],
             'margin_top' => (int) $formValues['margin_top'],
             'margin_bottom' => (int) $formValues['margin_bottom'],
-            'expiration_date' => !empty($formValues['expiration_date']) ? (int) $formValues['expiration_date'] : null,
+            'expiration_date_contractor' => !empty($formValues['expiration_date_contractor']) ? (int) $formValues['expiration_date_contractor'] : null,
             'certificate_default' => 0,
             'show_back' => $showBack,
             'date_change' => (int) $formValues['date_change']
@@ -363,7 +363,8 @@ $listTags = [
     'qr-code',
     'bar_code',
     'valid_from',
-    'expiration_date',
+    'expiration_date_contractor',
+    'expiration_date_petroperu',
 ];
 
 $strInfo = '<ul class="list-tags">';
@@ -547,8 +548,20 @@ try {
 }
 
 $form->addSelect(
-    'expiration_date',
-    'Fecha de Expiración',
+    'expiration_date_contractor',
+    $plugin->get_lang('ExpirationDateContractor'),
+    [
+        '' => '- Sin Fecha de Expiración -',
+        '30' => '1 mes',
+        '90' => '3 meses',
+        '365' => '1 año',
+        '730' => '2 años',
+    ]
+);
+
+$form->addSelect(
+    'expiration_date_petroperu',
+    $plugin->get_lang('ExpirationDatePetroperu'),
     [
         '' => '- Sin Fecha de Expiración -',
         '30' => '1 mes',
@@ -585,7 +598,8 @@ if(!empty($infoCertificate)){
         'margin_right' => $infoCertificate['margin_right'],
         'margin_top' => $infoCertificate['margin_top'],
         'margin_bottom' => $infoCertificate['margin_bottom'],
-        'expiration_date' => $infoCertificate['expiration_date'],
+        'expiration_date_contractor' => $infoCertificate['expiration_date_contractor'],
+        'expiration_date_petroperu' => $infoCertificate['expiration_date_petroperu'],
     ];
 
 } else {
@@ -600,7 +614,8 @@ if(!empty($infoCertificate)){
         'margin_right' => '1',
         'margin_top' => '1',
         'margin_bottom' =>'1',
-        'expiration_date' => null
+        'expiration_date_contractor' => null,
+        'expiration_date_petroperu' => null
     ];
 
 }

@@ -96,3 +96,5 @@ $strings['SaveMessage'] = 'Guardar mensaje';
 $strings['ItemGlobalCertificateEnabled'] = 'El ítem final global de certificado esta activado, deja vació el editor y solo coloque el titulo del item final.';
 $strings['CongratulationsDownloadYourCertificate'] = 'Felicidades, descarga tu certificado';
 $strings['ExpirationSession'] = "Fecha de Expiración";
+$strings['ExpirationDateContractor'] = "Fecha de expiración para contratista";
+$strings['ExpirationDatePetroperu'] = "Fecha de expiración para Petroperu";

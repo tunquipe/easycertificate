@@ -358,7 +358,8 @@ class EasyCertificatePlugin extends Plugin
                     'certificate_default' => $row['certificate_default'],
                     'show_back' => $row['show_back'],
                     'date_change' => $row['date_change'],
-                    'expiration_date' => $row['expiration_date'],
+                    'expiration_date_contractor' => $row['expiration_date_contractor'],
+                    'expiration_date_petroperu' => $row['expiration_date_petroperu'],
                 ];
             }
         }
@@ -647,18 +648,18 @@ class EasyCertificatePlugin extends Plugin
             s.created_at     AS issued_at,
             u.firstname     AS firstname,
             u.lastname     AS lastname,
-            c.expiration_date
+            c.expiration_date_contractor
         FROM {$tblSend} AS s
         INNER JOIN {$tblCert} AS c
             ON s.certificate_id = c.id
         INNER JOIN {$tblUser} AS u
             ON u.user_id = s.user_id
         WHERE
-            c.expiration_date IS NOT NULL
+            c.expiration_date_contractor IS NOT NULL
             /* Fecha de expiración real: s.created_at + INTERVAL c.expiration_date DAY */
             /* Fecha de envío de recordatorio: 30 días antes de eso */
             AND NOW() >= DATE_SUB(
-                DATE_ADD(s.created_at, INTERVAL c.expiration_date DAY),
+                DATE_ADD(s.created_at, INTERVAL c.expiration_date_contractor DAY),
                 INTERVAL 30 DAY
             )
             AND s.expiration_reminder_sent = 0;
