@@ -507,7 +507,10 @@ class EasyCertificatePlugin extends Plugin
                 $certificateTable = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CERTIFICATE);
                 $categoryTable = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CATEGORY);
                 $sql = "SELECT cer.id as id_certificate, CONCAT(cer.id,'-',cer.cat_id,'-',cer.user_id) as code_certificate,
-                    cer.score_certificate, cer.cat_id,cer.user_id, DATE_FORMAT(cer.created_at, '%Y-%m-%d') as created_at, cat.weight,cat.course_code, cat.session_id
+                    cer.score_certificate, cer.cat_id,cer.user_id,
+                    DATE_FORMAT(cer.created_at, '%Y-%m-%d') as created_at,
+                    DATE_FORMAT(cer.expiration_date, '%Y-%m-%d') as expiration_date,
+                    cat.weight,cat.course_code, cat.session_id
                     FROM $certificateTable cer
                     INNER JOIN $categoryTable cat
                     ON (cer.cat_id = cat.id)
@@ -534,7 +537,8 @@ class EasyCertificatePlugin extends Plugin
                         'studentName' => $userInfo['firstname'].' '.$userInfo['lastname'],
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
-                        'scoreCertificate' => $row['score_certificate'].$percentageValue.'<br>'.$simpleAverageNotCategory,
+                        'expiration_date' => $row['expiration_date'],
+                        'scoreCertificate' => round($simpleAverageNotCategory).' / '.$row['score_certificate'].$percentageValue,
                         'codeCertificate' => md5($row['code_certificate']),
                         'proikosCertCode' => self::getProikosCertCode($row['id_certificate']),
                         'urlBarCode' => $imgCodeBar,

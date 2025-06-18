@@ -33,6 +33,12 @@
                         {{ certificate.datePrint }}
                     </dd>
                     <dt>
+                        {{ 'ExpirationSession'|get_plugin_lang('EasyCertificatePlugin') }}
+                    </dt>
+                    <dd>
+                        {{ certificate.expiration_date }}
+                    </dd>
+                    <dt>
                         {{ 'scoreCertificate'|get_plugin_lang('EasyCertificatePlugin') }}
                     </dt>
                     <dd>
