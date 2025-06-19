@@ -336,6 +336,19 @@ class EasyCertificatePlugin extends Plugin
         }
     }
 
+    public static function getNumberOfDaysToExpiration($courseId, $sessionId, $accessUrlId, $user_id)
+    {
+        $infoCert = self::getInfoCertificate($courseId, $sessionId, $accessUrlId);
+        $proikos = ProikosPlugin::create();
+        $userInfoProikos = $proikos->getInfoUserProikos($user_id);
+        $expirationDays = $infoCert['expiration_date_contractor'];
+        if($userInfoProikos['stakeholders'] == 1){
+            $expirationDays = $infoCert['expiration_date_petroperu'];
+        }
+
+        return $expirationDays;
+
+    }
     /**
      * Get certificate info.
      *
