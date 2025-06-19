@@ -253,6 +253,7 @@ foreach ($userList as $userInfo) {
         $catId,
         $studentId
     );
+
     $createdAt = '';
     if (!empty($myCertificate['created_at'])) {
         $createdAt = strtotime(api_get_local_time($myCertificate['created_at']));
@@ -263,27 +264,12 @@ foreach ($userList as $userInfo) {
         $createdAt,
         $myContentHtml
     );
-
-    $validFrom = date('d/m/Y');
-    $daysExpiration = $infoCertificate['expiration_date'];
-
-    $myContentHtml = str_replace(
-        '((valid_from))',
-        $validFrom,
-        $myContentHtml
-    );
-
-    $validTo = '';
-    if (!empty($daysExpiration)) {
-        $validTo = date('d/m/Y', strtotime(date('Y-m-d') . ' + ' . $daysExpiration . ' days'));
-    }
-
+    $dateExpiration = api_format_date($myCertificate['expiration_date'], DATE_FORMAT_LONG_NO_DAY);
     $myContentHtml = str_replace(
         '((expiration_date))',
-        $validTo,
+        $dateExpiration,
         $myContentHtml
     );
-
     $certificatesTrabajoAltoRiesgo = getCertificatesTrabajoAltoRiesgo(
         $userInfo['metadata'],
         $sessionId
