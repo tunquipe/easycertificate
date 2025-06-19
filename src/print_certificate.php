@@ -209,6 +209,12 @@ foreach ($userList as $userInfo) {
         }
     }
 
+    //Get Category GradeBook
+    $myCertificate = GradebookUtils::get_certificate_by_user_id(
+        $catId,
+        $studentId
+    );
+
     //Session Date.
     $startDate = null;
     $endDate = null;
@@ -235,6 +241,15 @@ foreach ($userList as $userInfo) {
                 }
                 break;
         }
+
+        if(is_null($startDate)){
+            $startDate = api_format_date(strtotime(api_get_local_time($myCertificate['created_at'])), DATE_FORMAT_LONG_NO_DAY);
+        }
+
+        if(is_null($endDate)){
+            $endDate = api_format_date(strtotime(api_get_local_time($myCertificate['created_at'])), DATE_FORMAT_LONG_NO_DAY);
+        }
+
         $myContentHtml = str_replace(
             '((session_start_date))',
             $startDate,
@@ -247,12 +262,8 @@ foreach ($userList as $userInfo) {
             $myContentHtml
         );
     }
+
     //Date Expedition
-    //Get Category GradeBook
-    $myCertificate = GradebookUtils::get_certificate_by_user_id(
-        $catId,
-        $studentId
-    );
 
     $createdAt = '';
     if (!empty($myCertificate['created_at'])) {
