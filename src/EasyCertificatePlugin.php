@@ -342,6 +342,9 @@ class EasyCertificatePlugin extends Plugin
         $proikos = ProikosPlugin::create();
         $userInfoProikos = $proikos->getInfoUserProikos($user_id);
         $expirationDays = $infoCert['expiration_date_contractor'];
+        if(empty($userInfoProikos)) {
+            $userInfoProikos['stakeholders'] = 1;
+        }
         if($userInfoProikos['stakeholders'] == 1){
             $expirationDays = $infoCert['expiration_date_petroperu'];
         }
