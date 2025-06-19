@@ -349,7 +349,10 @@ class EasyCertificatePlugin extends Plugin
             $expirationDays = $infoCert['expiration_date_petroperu'];
         }
 
-        return $expirationDays;
+        return [
+            'expected_days' => $expirationDays,
+            'date_issue_mode' => $infoCert['date_change'],
+        ];
 
     }
     /**
