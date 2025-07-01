@@ -419,7 +419,8 @@ $form->addRadio(
     $plugin->get_lang('DateSession'),
     [
         '0' => $plugin->get_lang('None'),
-        '1' => $plugin->get_lang('UseDateViewSession')
+        '1' => $plugin->get_lang('UseDateViewSession'),
+        '2' => $plugin->get_lang('UseDateAccessSession')
     ]
 );
 

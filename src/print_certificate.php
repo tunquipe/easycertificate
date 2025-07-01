@@ -219,20 +219,21 @@ foreach ($userList as $userInfo) {
     $startDate = null;
     $endDate = null;
     if ($sessionId > 0) {
-        switch ($infoCertificate['date_change']) {
-            case 0:
+
+        switch (intval($infoCertificate['date_change'])) {
+            case 1:
                 if (!empty($sessionInfo['display_start_date'])) {
-                    $startDate = strtotime(api_get_local_time($sessionInfo['display_start_date']));
+                    $startDate = api_get_local_time($sessionInfo['display_start_date'],null,null,true);
                     $startDate = api_format_date($startDate, DATE_FORMAT_LONG_NO_DAY);
                 }
                 if (!empty($sessionInfo['display_end_date'])) {
-                    $endDate = strtotime(api_get_local_time($sessionInfo['display_end_date']));
+                    $endDate = api_get_local_time($sessionInfo['display_end_date']);
                     $endDate = api_format_date($endDate, DATE_FORMAT_LONG_NO_DAY);
                 }
                 break;
-            case 1:
+            case 2:
                 if (!empty($sessionInfo['access_start_date'])) {
-                    $startDate = strtotime(api_get_local_time($sessionInfo['access_start_date']));
+                    $startDate = api_get_local_time($sessionInfo['access_start_date'],null,null,true);
                     $startDate = api_format_date($startDate, DATE_FORMAT_LONG_NO_DAY);
                 }
                 if (!empty($sessionInfo['access_end_date'])) {
@@ -275,6 +276,7 @@ foreach ($userList as $userInfo) {
         $createdAt,
         $myContentHtml
     );
+
     $dateExpiration = api_format_date($myCertificate['expiration_date'], DATE_FORMAT_LONG_NO_DAY);
     $myContentHtml = str_replace(
         '((expiration_date))',
