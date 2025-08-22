@@ -174,6 +174,12 @@ foreach ($userList as $userInfo) {
     );
 
     $myContentHtml = str_replace(
+        '((username))',
+        $userInfo['username'],
+        $myContentHtml
+    );
+
+    $myContentHtml = str_replace(
         '((score_certificate))',
         $score['score_certificate'],
         $myContentHtml

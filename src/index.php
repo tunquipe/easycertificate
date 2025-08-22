@@ -343,6 +343,7 @@ $form->addHtml('</div></div>
 $listTags = [
     'user_firstname',
     'user_lastname',
+    'username',
     'gradebook_institution',
     'gradebook_sitename',
     'teacher_firstname',
