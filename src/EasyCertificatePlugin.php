@@ -14,6 +14,8 @@ class EasyCertificatePlugin extends Plugin
     const TABLE_EASYCERTIFICATE = 'plugin_easycertificate';
     const TABLE_EASYCERTIFICATE_REMINDER = 'plugin_easycertificate_reminder';
     const TABLE_EASYCERTIFICATE_SEND = 'plugin_easycertificate_send';
+    const TABLE_PROIKOS_USERS = 'plugin_proikos_users';
+    const TABLE_PLUGIN_EASY_CERTIFICATE_SEND = 'plugin_easycertificate_send';
     public $isCoursePlugin = true;
 
     // When creating a new course this settings are added to the course
@@ -428,7 +430,93 @@ class EasyCertificatePlugin extends Plugin
 
         return $resultArray;
     }
+    public static function getScoreForExams($userID, $courseId = 0 , $sessionId = 0){
 
+        $plugin = ProikosPlugin::create();
+
+        $tbl_course = Database::get_main_table(TABLE_MAIN_COURSE);
+        $tbl_session_course_user = Database::get_main_table(TABLE_MAIN_SESSION_COURSE_USER);
+        $tbl_user = Database::get_main_table(TABLE_MAIN_USER);
+        $tbl_session = Database::get_main_table(TABLE_MAIN_SESSION);
+        $tbl_session_category = Database::get_main_table(TABLE_MAIN_SESSION_CATEGORY);
+        $tbl_proikos_user = Database::get_main_table(self::TABLE_PROIKOS_USERS);
+        $table_plugin_easycertificate_send = Database::get_main_table(self::TABLE_PLUGIN_EASY_CERTIFICATE_SEND);
+        $sql = "
+            SELECT DISTINCT
+                u.id,
+                u.username,
+                u.registration_date,
+                u.email,
+                u.username as DNI,
+                CONCAT(u.firstname, ' ', u.lastname) as student,
+                sc.id as session_category_id,
+                sc.name as session_category_name,
+                srcu.session_id,
+                srcu.c_id,
+                c.code,
+                s.name as session_name,
+                 ppu.name_company,
+                ppu.ruc_company,
+                ppu.stakeholders,
+                IF(ppu.area = -1, 'No registrado', ppu.area) as area,
+                IF(ppu.metadata IS NOT NULL AND ppu.metadata != '', 'true', 'false') as metadata_exists,
+                COALESCE((
+                        SELECT
+                            CASE
+                                WHEN pecs.certificate_id IS NOT NULL
+                                    AND CURRENT_DATE >= DATE(pecs.created_at)
+                                    AND (pecs.reminder_15_sent_at IS NULL OR CURRENT_DATE <= pecs.reminder_15_sent_at)
+                                THEN '1'
+                                ELSE '2'
+                            END
+                        FROM {$table_plugin_easycertificate_send} pecs
+                        WHERE pecs.user_id = u.id
+                            AND pecs.session_id = s.id
+                            AND pecs.course_id = srcu.c_id
+                        ORDER BY pecs.id DESC
+                        LIMIT 1
+                    ), '3') AS certificate_status
+            FROM
+                $tbl_session_course_user srcu
+            INNER JOIN
+                $tbl_course c ON c.id = srcu.c_id
+            INNER JOIN
+                $tbl_session s ON s.id = srcu.session_id
+            INNER JOIN
+                $tbl_session_category sc ON sc.id = s.session_category_id
+            INNER JOIN
+                $tbl_user u ON u.user_id = srcu.user_id
+            INNER JOIN
+                $tbl_proikos_user ppu ON ppu.user_id = u.id
+            WHERE
+                srcu.status = 0 ";
+
+        if(!empty($userID)){
+            $sql.= " AND u.id = $userID ";
+        }
+
+        if($courseId != 0){
+            $sql.= " AND srcu.c_id = $courseId ";
+        }
+
+        if($sessionId != 0){
+            $sql.= " AND srcu.session_id = $sessionId ";
+        }
+
+        $result = Database::query($sql);
+        $average = 0;
+        if (Database::num_rows($result) > 0) {
+            while ($row = Database::fetch_assoc($result)) {
+                $userScore = $plugin->getResultExerciseStudent($row['id'], $row['c_id'], $row['session_id']);
+                $row['exams'] = $userScore;
+                $examen_de_entrada = isset($row['exams']['examen_de_entrada']) && $row['exams']['examen_de_entrada'] !== '' ? $row['exams']['examen_de_entrada'] : 0;
+                $examen_de_salida = isset($row['exams']['examen_de_salida']) && $row['exams']['examen_de_salida'] !== '' ? $row['exams']['examen_de_salida'] : 0;
+                $taller = isset($row['exams']['taller']) && $row['exams']['taller'] !== '' ? $row['exams']['taller'] : 0;
+                $average = ($examen_de_entrada+$examen_de_salida+$taller)/3;
+            }
+            return $average;
+        }
+    }
     /**
      * @param string $codeCourse code course
      * @param int $userID userid
@@ -549,7 +637,9 @@ class EasyCertificatePlugin extends Plugin
                     }
 
                     //simple average with category
-                    $simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0, $row['session_id']);
+                    //$simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0, $row['session_id']);
+
+                    $scoreExams = EasyCertificatePlugin::getScoreForExams($row['user_id'], $courseInfo['real_id'] ,$row['session_id']);
 
                     $list   = [
                         'id_certificate' => $row['id_certificate'],
@@ -557,7 +647,7 @@ class EasyCertificatePlugin extends Plugin
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
                         'expiration_date' => $row['expiration_date'],
-                        'scoreCertificate' => round($simpleAverageNotCategory).' / '.$row['score_certificate'].$percentageValue,
+                        'scoreCertificate' => round($scoreExams).' / '.$row['score_certificate'].$percentageValue,
                         'codeCertificate' => md5($row['code_certificate']),
                         'proikosCertCode' => self::getProikosCertCode($row['id_certificate']),
                         'urlBarCode' => $imgCodeBar,
