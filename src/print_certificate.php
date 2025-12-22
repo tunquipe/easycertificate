@@ -148,6 +148,13 @@ foreach ($userList as $userInfo) {
         $catId,
         $userInfo['user_id']
     );
+    $convertScore = convertPercentageToScore($score['score_certificate']);
+
+    $myContentHtml = str_replace(
+        '((score_number))',
+        $convertScore,
+        $myContentHtml
+    );
 
     $myContentHtml = str_replace(
         '((score_certificate))',
@@ -357,7 +364,23 @@ if (!empty($fileList)) {
     DocumentManager::file_send_for_download($zipFile, true, $name);
     exit;
 }
+function convertPercentageToScore($p): float
+{
+    // clamp 0..100
+    $p = max(0, min(100, floatval($p)));
 
+    if ($p < 60) {
+        $nota = 1 + $p / 20;                 // 0..60 -> 1..4
+    } else {
+        $nota = 4 + ($p - 60) * 3 / 40;      // 60..100 -> 4..7
+    }
+
+    // clamp final 1..7 por seguridad
+    $nota = max(1, min(7, $nota));
+
+    // redondeo a 1 decimal
+    return round($nota, 1);
+}
 function getIndexFiltered($index)
 {
     $txt = strip_tags($index, "<b><strong><i>");

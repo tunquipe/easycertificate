@@ -243,7 +243,23 @@ $form->addHeader($plugin->get_lang('FrontContentCertificate'));
 
 $dir = '/';
 $courseInfo = api_get_course_info();
+
 $isAllowedToEdit = api_is_allowed_to_edit(null, true);
+$isInCourse = !empty($courseInfo) && is_array($courseInfo);
+
+// Configurar rutas según el contexto
+if ($isInCourse) {
+    // Estamos dentro de un curso - usar rutas reales
+    $coursePath = $courseInfo['path'];
+    $createDocumentDir = api_get_path(WEB_COURSE_PATH) . $coursePath . '/document/';
+    $createDocumentWebDir = api_get_path(WEB_COURSE_PATH) . $coursePath . '/document/';
+    $baseHref = api_get_path(WEB_COURSE_PATH) . $coursePath . '/document/' . $dir;
+} else {
+    // Vista previa - usar rutas vacías o valores por defecto
+    $createDocumentDir = '';
+    $createDocumentWebDir = '';
+    $baseHref = '';
+}
 
 $editorConfigOne = [
     'ToolbarSet' => $isAllowedToEdit ? 'Documents' : 'DocumentsStudent',
@@ -252,9 +268,9 @@ $editorConfigOne = [
     'cols-size' => [0, 12, 0],
     'FullPage' => true,
     'InDocument' => true,
-    'CreateDocumentDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'CreateDocumentWebDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'BaseHref' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document'.$dir,
+    'CreateDocumentDir' => $createDocumentDir,
+    'CreateDocumentWebDir' => $createDocumentWebDir,
+    'BaseHref' => $baseHref,
 ];
 
 $html = '
@@ -295,9 +311,9 @@ $editorConfigTwo = [
     'cols-size' => [0, 12, 0],
     'FullPage' => true,
     'InDocument' => true,
-    'CreateDocumentDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'CreateDocumentWebDir' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document/',
-    'BaseHref' => api_get_path(WEB_COURSE_PATH).$courseInfo['path'].'/document'.$dir,
+    'CreateDocumentDir' => $createDocumentDir,
+    'CreateDocumentWebDir' => $createDocumentWebDir,
+    'BaseHref' => $baseHref,
 ];
 $form->addHtmlEditor(
     'back_content',
@@ -331,7 +347,8 @@ $listTags = [
     'simple_average_category',
     'simple_average',
     'qr-code',
-    'bar_code'
+    'bar_code',
+    'score_number'
 ];
 
 $strInfo = '<ul class="list-tags">';
