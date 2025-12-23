@@ -376,10 +376,8 @@ function convertPercentageToScore($p): float
     }
 
     // clamp final 1..7 por seguridad
-    $nota = max(1, min(7, $nota));
-
     // redondeo a 1 decimal
-    return round($nota, 1);
+    return max(1, min(7, $nota));
 }
 function getIndexFiltered($index)
 {
