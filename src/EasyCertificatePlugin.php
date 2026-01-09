@@ -660,7 +660,7 @@ class EasyCertificatePlugin extends Plugin
                         'courseName' => $courseInfo['name'],
                         'datePrint' => $row['created_at'],
                         'expiration_date' => $row['expiration_date'],
-                        'scoreCertificate' => round($scoreExams).' / '.$row['score_certificate'].$percentageValue,
+                        'scoreCertificate' => $scoreExams.' / '.$row['score_certificate'].$percentageValue,
                         'codeCertificate' => md5($row['code_certificate']),
                         'proikosCertCode' => self::getProikosCertCode($row['id_certificate']),
                         'urlBarCode' => $imgCodeBar,
