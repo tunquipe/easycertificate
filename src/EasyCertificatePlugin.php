@@ -508,11 +508,24 @@ class EasyCertificatePlugin extends Plugin
         if (Database::num_rows($result) > 0) {
             while ($row = Database::fetch_assoc($result)) {
                 $userScore = $plugin->getResultExerciseStudent($row['id'], $row['c_id'], $row['session_id']);
+
                 $row['exams'] = $userScore;
+
+                // Validar si los valores existen o son vacíos, y si lo son, asignar 0
                 $examen_de_entrada = isset($row['exams']['examen_de_entrada']) && $row['exams']['examen_de_entrada'] !== '' ? $row['exams']['examen_de_entrada'] : 0;
                 $examen_de_salida = isset($row['exams']['examen_de_salida']) && $row['exams']['examen_de_salida'] !== '' ? $row['exams']['examen_de_salida'] : 0;
                 $taller = isset($row['exams']['taller']) && $row['exams']['taller'] !== '' ? $row['exams']['taller'] : 0;
-                $average = ($examen_de_entrada+$examen_de_salida+$taller)/3;
+
+                // Definir los porcentajes para cada examen
+                $ponderacion_entrada = 0.10;  // 10%
+                $ponderacion_salida = 0.30;   // 30%
+                $ponderacion_taller = 0.60;   // 60%
+
+                $entrance = floatval($examen_de_entrada);
+                $workshop = floatval($taller);
+                $exit = floatval($examen_de_salida);
+                $average = ($entrance * $ponderacion_entrada) + ($workshop * $ponderacion_taller) + ($exit * $ponderacion_salida);
+
             }
             return $average;
         }

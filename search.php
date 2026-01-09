@@ -14,8 +14,6 @@ $enable = $plugin->get('enable_plugin_easycertificate') == 'true';
 $percentage = $plugin->get('percentage');
 $percentageValue = "";
 
-
-$tblProperty = Database::get_course_table(TABLE_ITEM_PROPERTY);
 $content =[];
 if ($type == 'view') {
     $codCertificate = isset($_GET['c_cert']) ? (string)$_GET['c_cert'] : null;
