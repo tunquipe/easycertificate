@@ -338,6 +338,43 @@ class EasyCertificatePlugin extends Plugin
         }
     }
 
+    public static function redirectCheckFree($certificate, $certId, $userId)
+    {
+        $certId = (int) $certId;
+        $userId = !empty($userId) ? $userId : api_get_user_id();
+
+        if (api_get_plugin_setting('easycertificate', 'enable_plugin_easycertificate') === 'true') {
+            $infoCertificate = self::getCertificateData($certId, $userId);
+            //var_dump($infoCertificate);
+            if (!empty($infoCertificate)) {
+
+                if ($certificate->user_id == api_get_user_id() && !empty($certificate->certificate_data)) {
+                    $certificateId = $certificate->certificate_data['id'];
+                    $extraFieldValue = new ExtraFieldValue('user_certificate');
+                    $value = $extraFieldValue->get_values_by_handler_and_field_variable(
+                        $certificateId,
+                        'downloaded_at'
+                    );
+                    if (empty($value)) {
+                        $params = [
+                            'item_id' => $certificate->certificate_data['id'],
+                            'extra_downloaded_at' => api_get_utc_datetime(),
+                        ];
+                        $extraFieldValue->saveFieldValues($params);
+                    }
+                }
+
+                $url = api_get_path(WEB_PLUGIN_PATH).'easycertificate/src/print_certificate.php'.
+                    '?student_id='.$infoCertificate['user_id'].
+                    '&course_code='.$infoCertificate['course_code'].
+                    '&session_id='.$infoCertificate['session_id'].
+                    '&cat_id='.$infoCertificate['category_id'];
+                header('Location: '.$url);
+                exit;
+            }
+        }
+    }
+
     public static function getNumberOfDaysToExpiration($courseId, $sessionId, $accessUrlId, $user_id)
     {
         $infoCert = self::getInfoCertificate($courseId, $sessionId, $accessUrlId);
@@ -635,6 +672,7 @@ class EasyCertificatePlugin extends Plugin
                     INNER JOIN $categoryTable cat
                     ON (cer.cat_id = cat.id)
                     WHERE md5(CONCAT(cer.id,'-',cer.cat_id,'-',cer.user_id)) = '$codeCertificate'";
+                print_r($sql);
                 $rs = Database::query($sql);
                 if (Database::num_rows($rs) > 0) {
                     $row = Database::fetch_assoc($rs);
@@ -648,9 +686,6 @@ class EasyCertificatePlugin extends Plugin
                     if (!empty($codCertificate)) {
                         $imgCodeBar = '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">';
                     }
-
-                    //simple average with category
-                    //$simpleAverageNotCategory = EasyCertificatePlugin::getScoreForEvaluations($row['course_code'], $row['user_id'], 0, $row['session_id']);
 
                     $scoreExams = EasyCertificatePlugin::getScoreForExams($row['user_id'], $courseInfo['real_id'] ,$row['session_id']);
 
@@ -667,13 +702,91 @@ class EasyCertificatePlugin extends Plugin
                     ];
                 }
             }
-
             return $list;
         }
+    }
 
-        $url = api_get_path(WEB_PLUGIN_PATH).'easycertificate/search.php'.
-                '?type=view&c_cert='.$codeCertificate;
-            header('Location: '.$url);
+    public static function getGenerateInfoForUsername($info, $username = null, $percentage = false)
+    {
+        $list   = [];
+        $percentageValue = "";
+        if ($percentage != 'false'){
+            $percentageValue = "%";
+        }
+
+        if($info === true)
+        {
+            if(!empty($username)) {
+                $certificateTable = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CERTIFICATE);
+                $categoryTable = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CATEGORY);
+                $userTable = Database::get_main_table(TABLE_MAIN_USER);
+                $sql = "
+                                SELECT
+                    u.lastname,
+                    u.firstname,
+                    u.username,
+                    cer.id AS id_certificate,
+                    CONCAT(cer.id,
+                            '-',
+                            cer.cat_id,
+                            '-',
+                            cer.user_id) AS code_certificate,
+                    cer.score_certificate,
+                    cer.cat_id,
+                    cer.user_id,
+                    DATE_FORMAT(cer.created_at, '%Y-%m-%d') AS created_at,
+                    DATE_FORMAT(cer.expiration_date, '%Y-%m-%d') AS expiration_date,
+                    cat.weight,
+                    cat.course_code,
+                    cat.session_id
+                FROM
+                    $certificateTable cer
+                    INNER JOIN
+                    $categoryTable cat ON (cer.cat_id = cat.id)
+                    INNER JOIN
+                    $userTable u ON (u.id = cer.user_id)
+                WHERE
+                    u.username = $username
+                ";
+
+                $rs = Database::query($sql);
+                if (Database::num_rows($rs) > 0) {
+                    $row = Database::fetch_assoc($rs);
+                    //$userInfo = api_get_user_info($row['user_id'], false, false, true, true, false, true);
+                    $courseInfo = api_get_course_info($row['course_code']);
+
+                    $generator = new Picqer\Barcode\BarcodeGeneratorPNG();
+                    $codCertificate = $row['code_certificate'];
+                    $imgCodeBar = '';
+
+                    if (!empty($codCertificate)) {
+                        $imgCodeBar = '<img src="data:image/png;base64,' . base64_encode($generator->getBarcode($codCertificate, $generator::TYPE_CODE_128)) . '">';
+                    }
+
+                    $scoreExams = EasyCertificatePlugin::getScoreForExams($row['user_id'], $courseInfo['real_id'] ,$row['session_id']);
+                    $url_certificate = 'https://hseq.proikosacademy.org.pe/certificates/index.php'. '?action=view&ccert='.md5($codCertificate);
+                    $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($row['user_id'], md5($codCertificate));
+                    $urlImgQR = '<img src="data:image/png;base64,' . $certificateQR . '">';
+                    $url_download = 'https://hseq.proikosacademy.org.pe/certificates/index.php?action=export_view&user_id='.$row['user_id'].'&id='.$row['id_certificate'];
+                    $list   = [
+                        'id_certificate' => $row['id_certificate'],
+                        'studentName' => $row['firstname'].' '.$row['lastname'],
+                        'username' => $row['username'],
+                        'courseName' => $courseInfo['name'],
+                        'datePrint' => $row['created_at'],
+                        'expiration_date' => $row['expiration_date'],
+                        'scoreCertificate' => $scoreExams.' / '.$row['score_certificate'].$percentageValue,
+                        'codeCertificate' => md5($row['code_certificate']),
+                        'proikosCertCode' => self::getProikosCertCode($row['id_certificate']),
+                        'urlBarCode' => $imgCodeBar,
+                        'url_certificate' => $url_certificate,
+                        'url_download' => $url_download,
+                        'qr_code' => $urlImgQR,
+                    ];
+                }
+            }
+            return $list;
+        }
     }
 
     public static function getProikosCertCode($certId)

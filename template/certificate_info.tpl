@@ -1,3 +1,21 @@
+<style>
+    @media print {
+        .alert {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
+        .alert-success {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724 !important;
+        }
+    }
+</style>
 <div class="container">
     <div class="panel panel-default">
         <div class="panel-body">
@@ -5,7 +23,7 @@
                 <img src="{{_p.web_css_theme}}images/header-logo.png" alt="">
             </div>
             <div class="header-search">
-                <h3>{{ 'RegisterOfGeneratedCertificates'|get_plugin_lang('EasyCertificatePlugin') }}</h3>
+                <h3>{{ 'RegisterOfGeneratedCertificates'|get_plugin_lang('EasyCertificatePlugin') }} - {{ certificate.username }}</h3>
             </div>
             {% if certificate %}
             <div class="alert alert-success">
@@ -70,6 +88,15 @@
             <div class="alert alert-info" role="alert">
                 {{ 'ErrorInTheRegisteredCertificate'|get_plugin_lang('EasyCertificatePlugin') }}
             </div>
+            {% if certificate.url_certificate %}
+            <div>
+                <br> <strong>URL de validacion: </strong>
+                <a href="{{ certificate.url_certificate }}" target="_blank">{{ certificate.url_certificate }}</a>
+                <p>{{ certificate.qr_code }}</p>
+                <br> <strong>Descargar certificado: </strong>
+                <p><a href="{{ certificate.url_download }}" target="_blank">{{ certificate.url_download }}</a></p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
