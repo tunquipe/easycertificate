@@ -672,7 +672,6 @@ class EasyCertificatePlugin extends Plugin
                     INNER JOIN $categoryTable cat
                     ON (cer.cat_id = cat.id)
                     WHERE md5(CONCAT(cer.id,'-',cer.cat_id,'-',cer.user_id)) = '$codeCertificate'";
-                print_r($sql);
                 $rs = Database::query($sql);
                 if (Database::num_rows($rs) > 0) {
                     $row = Database::fetch_assoc($rs);
@@ -764,10 +763,10 @@ class EasyCertificatePlugin extends Plugin
                     }
 
                     $scoreExams = EasyCertificatePlugin::getScoreForExams($row['user_id'], $courseInfo['real_id'] ,$row['session_id']);
-                    $url_certificate = 'https://hseq.proikosacademy.org.pe/certificates/index.php'. '?action=view&ccert='.md5($codCertificate);
+                    $url_certificate = api_get_path(WEB_PATH).'plugin/easycertificate/search.php?type=view&c_cert='.md5($codCertificate);
                     $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($row['user_id'], md5($codCertificate));
                     $urlImgQR = '<img src="data:image/png;base64,' . $certificateQR . '">';
-                    $url_download = 'https://hseq.proikosacademy.org.pe/certificates/index.php?action=export_view&user_id='.$row['user_id'].'&id='.$row['id_certificate'];
+                    $url_download = api_get_path(WEB_PATH).'certificates/index.php?action=export_view&user_id='.$row['user_id'].'&id='.$row['id_certificate'];
                     $list   = [
                         'id_certificate' => $row['id_certificate'],
                         'studentName' => $row['firstname'].' '.$row['lastname'],

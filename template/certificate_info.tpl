@@ -92,9 +92,7 @@
             <div>
                 <br> <strong>URL de validacion: </strong>
                 <a href="{{ certificate.url_certificate }}" target="_blank">{{ certificate.url_certificate }}</a>
-                <p>{{ certificate.qr_code }}</p>
-                <br> <strong>Descargar certificado: </strong>
-                <p><a href="{{ certificate.url_download }}" target="_blank">{{ certificate.url_download }}</a></p>
+                <p><br> <strong>Descargar certificado: </strong><a href="{{ certificate.url_download }}" target="_blank">{{ certificate.url_download }}</a></p>
             </div>
             {% endif %}
         </div>
