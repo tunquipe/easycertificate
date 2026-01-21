@@ -364,7 +364,7 @@ if (!empty($fileList)) {
     DocumentManager::file_send_for_download($zipFile, true, $name);
     exit;
 }
-function convertPercentageToScore($p): float
+function convertPercentageToScore($p): string  // Cambiar de float a string
 {
     // clamp 0..100
     $p = max(0, min(100, floatval($p)));
@@ -375,9 +375,8 @@ function convertPercentageToScore($p): float
         $nota = 4 + ($p - 60) * 3 / 40;      // 60..100 -> 4..7
     }
 
-    // clamp final 1..7 por seguridad
-    // redondeo a 1 decimal
-    return max(1, min(7, $nota));
+    // clamp final 1..7 y formatear a 1 decimal
+    return number_format(max(1, min(7, $nota)), 1, '.', '');
 }
 function getIndexFiltered($index)
 {
