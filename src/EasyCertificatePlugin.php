@@ -338,6 +338,43 @@ class EasyCertificatePlugin extends Plugin
         }
     }
 
+    public static function viewCertificateHTML($certificate, $certId, $userId)
+    {
+        $certId = (int) $certId;
+        $userId = !empty($userId) ? $userId : api_get_user_id();
+
+        if (api_get_plugin_setting('easycertificate', 'enable_plugin_easycertificate') === 'true') {
+            $infoCertificate = self::getCertificateData($certId, $userId);
+            //var_dump($infoCertificate);
+            if (!empty($infoCertificate)) {
+
+                if ($certificate->user_id == api_get_user_id() && !empty($certificate->certificate_data)) {
+                    $certificateId = $certificate->certificate_data['id'];
+                    $extraFieldValue = new ExtraFieldValue('user_certificate');
+                    $value = $extraFieldValue->get_values_by_handler_and_field_variable(
+                        $certificateId,
+                        'downloaded_at'
+                    );
+                    if (empty($value)) {
+                        $params = [
+                            'item_id' => $certificate->certificate_data['id'],
+                            'extra_downloaded_at' => api_get_utc_datetime(),
+                        ];
+                        $extraFieldValue->saveFieldValues($params);
+                    }
+                }
+
+                $url = api_get_path(WEB_PLUGIN_PATH).'easycertificate/src/view_certificate.php'.
+                    '?student_id='.$infoCertificate['user_id'].
+                    '&course_code='.$infoCertificate['course_code'].
+                    '&session_id='.$infoCertificate['session_id'].
+                    '&cat_id='.$infoCertificate['category_id'];
+                header('Location: '.$url);
+                exit;
+            }
+        }
+    }
+
     public static function redirectCheckFree($certificate, $certId, $userId)
     {
         $certId = (int) $certId;
@@ -769,6 +806,9 @@ class EasyCertificatePlugin extends Plugin
                     $url_download = api_get_path(WEB_PATH).'certificates/index.php?action=export_view&user_id='.$row['user_id'].'&id='.$row['id_certificate'];
                     $list   = [
                         'id_certificate' => $row['id_certificate'],
+                        'cat_id' => $row['cat_id'],
+                        'course_code' => $row['course_code'],
+                        'session_id' => $row['session_id'],
                         'studentName' => $row['firstname'].' '.$row['lastname'],
                         'username' => $row['username'],
                         'courseName' => $courseInfo['name'],
@@ -800,6 +840,17 @@ class EasyCertificatePlugin extends Plugin
         if (!empty($userId) && !empty($codeCertificate)) {
             $urlcert = api_get_path(WEB_PATH).'certificates/index.php'.
                     '?action=view&ccert='.$codeCertificate;
+            $generarImg = self::generateQRImage($urlcert);
+
+        }
+        return $generarImg;
+    }
+    public static function getGenerateUrlImgRemote($userId, $codeCertificate){
+        $userId = (int) $userId;
+        $codeCertificate  = (string) $codeCertificate;
+        $generarImg  = "";
+        if (!empty($userId) && !empty($codeCertificate)) {
+            $urlcert = 'https://hseq.proikosacademy.org.pe/plugin/easycertificate/search.php?type=view&c_cert='.$codeCertificate;
             $generarImg = self::generateQRImage($urlcert);
 
         }
