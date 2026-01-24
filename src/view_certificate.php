@@ -70,6 +70,8 @@ $template = new Template($templateName);
 
 $linkCertificateCSS = '
     <title>' . htmlspecialchars($pageTitle) . '</title>
+    <meta name="description" content="Certificado de ' . htmlspecialchars($userName) . ' para el curso ' . htmlspecialchars($courseName) . '">
+    <meta name="author" content="' . htmlspecialchars($userName) . '">
     <link rel="stylesheet" type="text/css" href="' . api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/resources/css/certificate.css">
     <link rel="stylesheet" type="text/css" href="' . api_get_path(WEB_CSS_PATH) . 'document.css">
     <style>
@@ -81,6 +83,11 @@ $linkCertificateCSS = '
                 background-color: #525659;
                 overflow: auto;
                 min-height: 100vh;
+                /* Deshabilitar selección de texto */
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
             }
 
             #page-a, #page-b {
@@ -89,6 +96,109 @@ $linkCertificateCSS = '
                 background: white;
                 display: block;
                 transform-origin: top center;
+                /* Protección adicional */
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                pointer-events: auto;
+            }
+
+            /* Prevenir selección de imágenes */
+            img {
+                user-select: none;
+                -webkit-user-drag: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                pointer-events: none;
+            }
+
+            /* BOTÓN FLOTANTE DE IMPRESIÓN */
+            #print-button {
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                z-index: 9999;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                padding: 15px 30px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-family: Arial, sans-serif;
+                pointer-events: auto;
+                user-select: none;
+            }
+
+            #print-button:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+                background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            }
+
+            #print-button:active {
+                transform: translateY(-1px);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            }
+
+            #print-button svg {
+                width: 20px;
+                height: 20px;
+                fill: white;
+            }
+
+            /* Tooltip para el botón */
+            #print-button::before {
+                content: "Imprimir certificado";
+                position: absolute;
+                bottom: 100%;
+                right: 0;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 5px;
+                font-size: 14px;
+                white-space: nowrap;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+                margin-bottom: 10px;
+                font-weight: normal;
+            }
+
+            #print-button:hover::before {
+                opacity: 1;
+                visibility: visible;
+                margin-bottom: 15px;
+            }
+
+            /* Responsive para botón */
+            @media screen and (max-width: 600px) {
+                #print-button {
+                    padding: 12px 20px;
+                    font-size: 14px;
+                    bottom: 20px;
+                    right: 20px;
+                }
+
+                #print-button span {
+                    display: none;
+                }
+
+                #print-button {
+                    border-radius: 50%;
+                    width: 56px;
+                    height: 56px;
+                    padding: 0;
+                    justify-content: center;
+                }
             }
 
             /* Para orientación horizontal */
@@ -133,13 +243,14 @@ $linkCertificateCSS = '
             }
         }
 
-        /* Estilos para impresión - Sin cambios */
+        /* Estilos para impresión - Ocultar botón */
         @media print {
             html, body {
                 margin: 0;
                 padding: 0;
                 background: none;
                 overflow: visible;
+                user-select: none;
             }
 
             @page {
@@ -163,6 +274,11 @@ $linkCertificateCSS = '
             #page-b {
                 page-break-before: always;
             }
+
+            /* OCULTAR BOTÓN AL IMPRIMIR */
+            #print-button {
+                display: none !important;
+            }
         }
 
         /* Estilos comunes */
@@ -183,7 +299,194 @@ $starPage = '<!DOCTYPE html>
 <body>';
 //'<body style="margin: 0; padding: 0; overflow: hidden;">';
 
-$endPage = '</body></html>';
+$endPage = '
+<script>
+    (function() {
+        "use strict";
+
+        // Ajustar zoom automáticamente en vista previa
+        function adjustCertificateZoom() {
+            if (window.matchMedia("screen").matches) {
+                const pages = document.querySelectorAll("#page-a, #page-b");
+                const windowWidth = window.innerWidth - 40;
+
+                pages.forEach(page => {
+                    const pageWidth = page.offsetWidth;
+                    if (pageWidth > windowWidth) {
+                        const scale = windowWidth / pageWidth;
+                        page.style.transform = `scale(${scale})`;
+                        page.style.transformOrigin = "top center";
+                    }
+                });
+            }
+        }
+
+        // Ejecutar al cargar y al cambiar tamaño
+        window.addEventListener("load", adjustCertificateZoom);
+        window.addEventListener("resize", adjustCertificateZoom);
+
+        // Restaurar para impresión
+        window.addEventListener("beforeprint", () => {
+            const pages = document.querySelectorAll("#page-a, #page-b");
+            pages.forEach(page => {
+                page.style.transform = "none";
+            });
+        });
+
+        // Volver a ajustar después de imprimir
+        window.addEventListener("afterprint", adjustCertificateZoom);
+
+        // ============================================
+        // PROTECCIONES DE SEGURIDAD
+        // ============================================
+
+        // 1. Deshabilitar clic derecho
+        document.addEventListener("contextmenu", function(e) {
+            e.preventDefault();
+            return false;
+        }, false);
+
+        // 2. Deshabilitar selección de texto
+        document.addEventListener("selectstart", function(e) {
+            e.preventDefault();
+            return false;
+        }, false);
+
+        // 3. Deshabilitar arrastrar elementos
+        document.addEventListener("dragstart", function(e) {
+            e.preventDefault();
+            return false;
+        }, false);
+
+        // 4. Deshabilitar copiar
+        document.addEventListener("copy", function(e) {
+            e.preventDefault();
+            return false;
+        }, false);
+
+        // 5. Deshabilitar cortar
+        document.addEventListener("cut", function(e) {
+            e.preventDefault();
+            return false;
+        }, false);
+
+        // 6. Bloquear teclas de acceso rápido
+        document.addEventListener("keydown", function(e) {
+            // F12 - DevTools
+            if (e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Ctrl+Shift+I - Inspector
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Ctrl+Shift+J - Console
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Ctrl+U - Ver código fuente
+            if (e.ctrlKey && e.keyCode === 85) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Ctrl+Shift+C - Selector de elementos
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Ctrl+S - Guardar página
+            if (e.ctrlKey && e.keyCode === 83) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Ctrl+P está permitido para imprimir
+            // No bloqueamos Ctrl+P
+
+            // Ctrl+A - Seleccionar todo
+            if (e.ctrlKey && e.keyCode === 65) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Ctrl+C - Copiar
+            if (e.ctrlKey && e.keyCode === 67 && !e.shiftKey) {
+                e.preventDefault();
+                return false;
+            }
+        }, false);
+
+        // 7. Detectar si DevTools está abierto (método adicional)
+        let devtoolsOpen = false;
+        const threshold = 160;
+
+        const checkDevTools = () => {
+            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // Opcional: redirigir o mostrar advertencia
+                    // window.location.href = "about:blank";
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        };
+
+        // Verificar cada segundo
+        setInterval(checkDevTools, 1000);
+
+        // 8. Deshabilitar menú de imagen
+        const images = document.querySelectorAll("img");
+        images.forEach(img => {
+            img.addEventListener("contextmenu", function(e) {
+                e.preventDefault();
+                return false;
+            });
+        });
+
+        // 9. Protección contra debugger (opcional - puede ser molesto)
+        /*
+        setInterval(function() {
+            debugger;
+        }, 100);
+        */
+
+        // 10. Limpiar console (opcional)
+        if (window.console) {
+            console.log = function() {};
+            console.warn = function() {};
+            console.error = function() {};
+            console.info = function() {};
+            console.debug = function() {};
+        }
+
+        // 11. Protección adicional contra inspección
+        (function() {
+            const element = new Image();
+            Object.defineProperty(element, "id", {
+                get: function() {
+                    // DevTools está abierto
+                    // window.location.href = "about:blank";
+                    throw new Error("DevTools detectado");
+                }
+            });
+            console.log(element);
+        })();
+
+    })();
+</script>
+</body></html>';
 
 // Get user info
 
