@@ -72,12 +72,24 @@ $linkCertificateCSS = '
     <title>' . htmlspecialchars($pageTitle) . '</title>
     <meta name="description" content="Certificado de ' . htmlspecialchars($userName) . ' para el curso ' . htmlspecialchars($courseName) . '">
     <meta name="author" content="' . htmlspecialchars($userName) . '">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" type="text/css" href="' . api_get_path(WEB_PLUGIN_PATH) . 'easycertificate/resources/css/certificate.css">
     <link rel="stylesheet" type="text/css" href="' . api_get_path(WEB_CSS_PATH) . 'document.css">
     <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         /* Estilos para pantalla - Vista previa con scroll */
         @media screen {
-            html, body {
+            html {
+                overflow: auto;
+            }
+
+            body {
                 margin: 0;
                 padding: 20px;
                 background-color: #525659;
@@ -154,59 +166,13 @@ $linkCertificateCSS = '
                 fill: white;
             }
 
-            /* Tooltip para el botón */
-            #print-button::before {
-                content: "Imprimir certificado";
-                position: absolute;
-                bottom: 100%;
-                right: 0;
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 8px 12px;
-                border-radius: 5px;
-                font-size: 14px;
-                white-space: nowrap;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s ease;
-                margin-bottom: 10px;
-                font-weight: normal;
-            }
-
-            #print-button:hover::before {
-                opacity: 1;
-                visibility: visible;
-                margin-bottom: 15px;
-            }
-
-            /* Responsive para botón */
-            @media screen and (max-width: 600px) {
-                #print-button {
-                    padding: 12px 20px;
-                    font-size: 14px;
-                    bottom: 20px;
-                    right: 20px;
-                }
-
-                #print-button span {
-                    display: none;
-                }
-
-                #print-button {
-                    border-radius: 50%;
-                    width: 56px;
-                    height: 56px;
-                    padding: 0;
-                    justify-content: center;
-                }
-            }
-
             /* Para orientación horizontal */
             #page-a[data-orientation="h"],
             #page-b[data-orientation="h"] {
                 width: 29.7cm;
                 height: 21cm;
-                max-width: 100%;
+                max-width: none;
+                min-width: 29.7cm;
             }
 
             /* Para orientación vertical */
@@ -214,36 +180,105 @@ $linkCertificateCSS = '
             #page-b[data-orientation="v"] {
                 width: 21cm;
                 height: 29.7cm;
-                max-width: 100%;
+                max-width: none;
+                min-width: 21cm;
             }
 
-            /* Responsive - ajustar en pantallas pequeñas */
+            /* ===================================
+               RESPONSIVE PARA TABLETS Y MÓVILES
+               Mantiene formato con scroll
+               =================================== */
+
+            /* Tablets en landscape */
             @media screen and (max-width: 1200px) {
                 #page-a, #page-b {
-                    transform: scale(0.8);
-                    margin: 10px auto;
+                    margin: 15px auto;
                 }
             }
 
+            /* Tablets en portrait */
             @media screen and (max-width: 900px) {
+                body {
+                    padding: 15px;
+                }
+
                 #page-a, #page-b {
-                    transform: scale(0.6);
-                    margin: 5px auto;
+                    margin: 15px auto;
                 }
             }
 
-            @media screen and (max-width: 600px) {
+            /* Móviles - Con scroll horizontal */
+            @media screen and (max-width: 768px) {
+                html {
+                    overflow-x: auto;
+                    overflow-y: auto;
+                }
+
                 body {
                     padding: 10px;
+                    overflow-x: auto;
+                    overflow-y: auto;
+                    min-width: min-content;
                 }
+
                 #page-a, #page-b {
-                    transform: scale(0.4);
-                    margin: 0 auto;
+                    margin: 10px auto;
+                    box-shadow: 0 0 8px rgba(0,0,0,0.4);
+                    /* Mantener tamaño original, permitir scroll */
+                    max-width: none;
+                }
+
+                /* Mantener dimensiones originales en móvil */
+                #page-a[data-orientation="h"],
+                #page-b[data-orientation="h"] {
+                    width: 29.7cm;
+                    height: 21cm;
+                    min-width: 29.7cm;
+                }
+
+                #page-a[data-orientation="v"],
+                #page-b[data-orientation="v"] {
+                    width: 21cm;
+                    height: 29.7cm;
+                    min-width: 21cm;
+                }
+
+                /* Botón en móvil - solo ícono */
+                #print-button {
+                    bottom: 15px;
+                    right: 15px;
+                    padding: 0;
+                    border-radius: 50%;
+                    width: 56px;
+                    height: 56px;
+                    justify-content: center;
+                }
+
+                #print-button span {
+                    display: none;
+                }
+            }
+
+            /* Móviles muy pequeños */
+            @media screen and (max-width: 480px) {
+                body {
+                    padding: 5px;
+                }
+
+                #page-a, #page-b {
+                    margin: 5px auto;
+                }
+
+                #print-button {
+                    bottom: 10px;
+                    right: 10px;
+                    width: 50px;
+                    height: 50px;
                 }
             }
         }
 
-        /* Estilos para impresión - Ocultar botón */
+        /* Estilos para impresión */
         @media print {
             html, body {
                 margin: 0;
@@ -267,6 +302,18 @@ $linkCertificateCSS = '
                 background: white;
             }
 
+            #page-a[data-orientation="h"],
+            #page-b[data-orientation="h"] {
+                width: 29.7cm;
+                height: 21cm;
+            }
+
+            #page-a[data-orientation="v"],
+            #page-b[data-orientation="v"] {
+                width: 21cm;
+                height: 29.7cm;
+            }
+
             #page-a {
                 page-break-after: always;
             }
@@ -287,6 +334,25 @@ $linkCertificateCSS = '
             overflow: hidden;
             box-sizing: border-box;
         }
+
+        /* Estilos de la barra de scroll personalizados (opcional) */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #3a3a3a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>';
 
 $starPage = '<!DOCTYPE html>
@@ -304,26 +370,48 @@ $endPage = '
     (function() {
         "use strict";
 
-        // Ajustar zoom automáticamente en vista previa
+        // Detectar si es móvil
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+
+        // Ajustar zoom automáticamente solo en DESKTOP
         function adjustCertificateZoom() {
-            if (window.matchMedia("screen").matches) {
+            // Solo aplicar transformaciones en desktop si es necesario
+            if (!isMobile() && window.matchMedia("screen").matches) {
                 const pages = document.querySelectorAll("#page-a, #page-b");
                 const windowWidth = window.innerWidth - 40;
 
                 pages.forEach(page => {
                     const pageWidth = page.offsetWidth;
+
+                    // Si el certificado es más ancho que la ventana, escalar
                     if (pageWidth > windowWidth) {
                         const scale = windowWidth / pageWidth;
                         page.style.transform = `scale(${scale})`;
                         page.style.transformOrigin = "top center";
+                    } else {
+                        page.style.transform = "none";
                     }
+                });
+            } else if (isMobile()) {
+                // En móvil, NO escalar - permitir scroll
+                const pages = document.querySelectorAll("#page-a, #page-b");
+                pages.forEach(page => {
+                    page.style.transform = "none";
                 });
             }
         }
 
-        // Ejecutar al cargar y al cambiar tamaño
+        // Ejecutar al cargar
         window.addEventListener("load", adjustCertificateZoom);
-        window.addEventListener("resize", adjustCertificateZoom);
+
+        // Al cambiar tamaño
+        let resizeTimer;
+        window.addEventListener("resize", function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(adjustCertificateZoom, 250);
+        });
 
         // Restaurar para impresión
         window.addEventListener("beforeprint", () => {
@@ -408,9 +496,6 @@ $endPage = '
                 return false;
             }
 
-            // Ctrl+P está permitido para imprimir
-            // No bloqueamos Ctrl+P
-
             // Ctrl+A - Seleccionar todo
             if (e.ctrlKey && e.keyCode === 65) {
                 e.preventDefault();
@@ -424,65 +509,20 @@ $endPage = '
             }
         }, false);
 
-        // 7. Detectar si DevTools está abierto (método adicional)
-        let devtoolsOpen = false;
-        const threshold = 160;
-
-        const checkDevTools = () => {
-            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-
-            if (widthThreshold || heightThreshold) {
-                if (!devtoolsOpen) {
-                    devtoolsOpen = true;
-                    // Opcional: redirigir o mostrar advertencia
-                    // window.location.href = "about:blank";
-                }
-            } else {
-                devtoolsOpen = false;
-            }
-        };
-
-        // Verificar cada segundo
-        setInterval(checkDevTools, 1000);
-
-        // 8. Deshabilitar menú de imagen
-        const images = document.querySelectorAll("img");
-        images.forEach(img => {
-            img.addEventListener("contextmenu", function(e) {
-                e.preventDefault();
-                return false;
-            });
+        // 7. Prevenir zoom con pellizco en móvil
+        document.addEventListener("gesturestart", function(e) {
+            e.preventDefault();
         });
 
-        // 9. Protección contra debugger (opcional - puede ser molesto)
-        /*
-        setInterval(function() {
-            debugger;
-        }, 100);
-        */
-
-        // 10. Limpiar console (opcional)
-        if (window.console) {
-            console.log = function() {};
-            console.warn = function() {};
-            console.error = function() {};
-            console.info = function() {};
-            console.debug = function() {};
-        }
-
-        // 11. Protección adicional contra inspección
-        (function() {
-            const element = new Image();
-            Object.defineProperty(element, "id", {
-                get: function() {
-                    // DevTools está abierto
-                    // window.location.href = "about:blank";
-                    throw new Error("DevTools detectado");
-                }
-            });
-            console.log(element);
-        })();
+        // 8. Prevenir zoom con doble tap en móvil
+        let lastTouchEnd = 0;
+        document.addEventListener("touchend", function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
 
     })();
 </script>
