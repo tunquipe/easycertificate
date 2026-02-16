@@ -99,19 +99,15 @@ function downloadCertificatePDF() {
 
     var html2canvasOptions = {
         scale: scale,
-        useCORS: true,
-        allowTaint: false,
+        useCORS: false,
+        allowTaint: true,
         backgroundColor: null,
         logging: false
     };
 
-    // Convertir todas las imagenes a base64 antes de capturar
-    convertImagesToBase64(pageA).then(function() {
-        var promiseB = pageB ? convertImagesToBase64(pageB) : Promise.resolve();
-        return promiseB;
-    }).then(function() {
-        return html2canvas(pageA, html2canvasOptions);
-    }).then(function(canvasA) {
+    // Las imagenes ya fueron convertidas a base64 en el servidor (PHP)
+    // por lo que no hay problemas de CORS
+    html2canvas(pageA, html2canvasOptions).then(function(canvasA) {
         var { jsPDF } = window.jspdf;
         var pdf = new jsPDF(pdfOrientation, 'mm', pdfFormat);
 
@@ -146,73 +142,6 @@ function downloadCertificatePDF() {
         actionsDiv.style.display = 'flex';
         style.remove();
     }
-}
-
-/**
- * Convierte todas las imagenes (src e background-image) dentro de un elemento a base64
- * para evitar problemas de CORS con html2canvas
- */
-function convertImagesToBase64(container) {
-    var promises = [];
-
-    // Convertir background-image del contenedor y sus hijos
-    var allElements = [container].concat(Array.from(container.querySelectorAll('*')));
-    allElements.forEach(function(el) {
-        var bgImage = window.getComputedStyle(el).backgroundImage;
-        if (bgImage && bgImage !== 'none') {
-            var urlMatch = bgImage.match(/url\(["']?(.*?)["']?\)/);
-            if (urlMatch && urlMatch[1] && !urlMatch[1].startsWith('data:')) {
-                var bgUrl = urlMatch[1];
-                promises.push(
-                    imageToBase64(bgUrl).then(function(base64) {
-                        el.style.backgroundImage = "url('" + base64 + "')";
-                    }).catch(function() {
-                        // Si falla, mantener la imagen original
-                    })
-                );
-            }
-        }
-    });
-
-    // Convertir imagenes <img>
-    var images = container.querySelectorAll('img');
-    images.forEach(function(img) {
-        if (img.src && !img.src.startsWith('data:')) {
-            promises.push(
-                imageToBase64(img.src).then(function(base64) {
-                    img.src = base64;
-                }).catch(function() {
-                    // Si falla, mantener la imagen original
-                })
-            );
-        }
-    });
-
-    return Promise.all(promises);
-}
-
-/**
- * Carga una imagen desde URL y la convierte a base64
- */
-function imageToBase64(url) {
-    return new Promise(function(resolve, reject) {
-        var img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function() {
-            var canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            try {
-                resolve(canvas.toDataURL('image/png'));
-            } catch(e) {
-                reject(e);
-            }
-        };
-        img.onerror = reject;
-        img.src = url + (url.indexOf('?') === -1 ? '?' : '&') + '_t=' + Date.now();
-    });
 }
 </script>
 {% endif %}

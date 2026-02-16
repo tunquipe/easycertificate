@@ -771,6 +771,20 @@ $template->assign('back_content', $laterContent);
 $enablePdfDownload = api_get_plugin_setting('easycertificate', 'enable_pdf_download');
 $template->assign('enable_pdf_download', $enablePdfDownload === 'true');
 
+// Si PDF download está habilitado, convertir imágenes a base64 para evitar CORS
+if ($enablePdfDownload === 'true') {
+    $myContentHtml = convertImgSrcToBase64($myContentHtml);
+    $template->assign('front_content', $myContentHtml);
+
+    $laterContent = convertImgSrcToBase64($laterContent);
+    $template->assign('back_content', $laterContent);
+
+    $urlBackgroundHorizontal = imageUrlToBase64($urlBackgroundHorizontal);
+    $urlBackgroundVertical = imageUrlToBase64($urlBackgroundVertical);
+    $template->assign('background_h', $urlBackgroundHorizontal);
+    $template->assign('background_v', $urlBackgroundVertical);
+}
+
 // Generate HTML
 $content = $template->fetch('easycertificate/template/certificate_html.tpl');
 $htmlText = $starPage . $content . $endPage;
@@ -799,6 +813,57 @@ function getUserInfo($studentId) {
     }
 
     return $userInfo;
+}
+
+/**
+ * Convierte una URL de imagen a base64 data URI.
+ */
+function imageUrlToBase64($url)
+{
+    if (empty($url) || strpos($url, 'data:') === 0) {
+        return $url;
+    }
+
+    $context = stream_context_create([
+        'http' => ['timeout' => 10],
+        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+    ]);
+
+    $imageData = @file_get_contents($url, false, $context);
+    if ($imageData === false) {
+        return $url;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo->buffer($imageData);
+    if (strpos($mimeType, 'image/') !== 0) {
+        return $url;
+    }
+
+    return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+}
+
+/**
+ * Reemplaza todos los src de <img> en el HTML con versiones base64.
+ */
+function convertImgSrcToBase64($html)
+{
+    if (empty($html)) {
+        return $html;
+    }
+
+    return preg_replace_callback(
+        '/<img([^>]*)src=["\']([^"\']+)["\']([^>]*)>/i',
+        function ($matches) {
+            $src = $matches[2];
+            if (strpos($src, 'data:') === 0) {
+                return $matches[0];
+            }
+            $base64 = imageUrlToBase64($src);
+            return '<img' . $matches[1] . 'src="' . $base64 . '"' . $matches[3] . '>';
+        },
+        $html
+    );
 }
 
 function getCertificatesTrabajoAltoRiesgo($userMetadata, $sessionId): array
