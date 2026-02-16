@@ -97,4 +97,5 @@ $strings['datePrint'] = "Printing date";
 $strings['scoreCertificate'] = "Outcome";
 $strings['codeCertificate'] = "Certificate code";
 $strings['NoCertificate'] = "No certificate";
+$strings['enable_pdf_download'] = "Enable PDF certificate download";
 

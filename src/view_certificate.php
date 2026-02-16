@@ -125,12 +125,19 @@ $linkCertificateCSS = '
                 pointer-events: none;
             }
 
-            /* BOTÓN FLOTANTE DE IMPRESIÓN */
-            #print-button {
+            /* CONTENEDOR DE BOTONES FLOTANTES */
+            #certificate-actions {
                 position: fixed;
                 bottom: 30px;
                 right: 30px;
+                display: flex;
+                gap: 10px;
                 z-index: 9999;
+                pointer-events: auto;
+            }
+
+            /* BOTÓN FLOTANTE DE IMPRESIÓN */
+            #print-button {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
@@ -147,6 +154,37 @@ $linkCertificateCSS = '
                 font-family: Arial, sans-serif;
                 pointer-events: auto;
                 user-select: none;
+            }
+
+            /* BOTÓN DE DESCARGA PDF */
+            #download-pdf-button {
+                background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-family: Arial, sans-serif;
+                pointer-events: auto;
+                user-select: none;
+            }
+
+            #download-pdf-button:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+                background: linear-gradient(135deg, #218838 0%, #28a745 100%);
+            }
+
+            #download-pdf-button:active {
+                transform: translateY(-1px);
+                box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
             }
 
             #print-button:hover {
@@ -243,10 +281,15 @@ $linkCertificateCSS = '
                     min-width: 21cm;
                 }
 
-                /* Botón en móvil - solo ícono */
-                #print-button {
+                /* Botones en móvil - solo ícono */
+                #certificate-actions {
                     bottom: 15px;
                     right: 15px;
+                    gap: 8px;
+                }
+
+                #print-button,
+                #download-pdf-button {
                     padding: 0;
                     border-radius: 50%;
                     width: 56px;
@@ -254,7 +297,8 @@ $linkCertificateCSS = '
                     justify-content: center;
                 }
 
-                #print-button span {
+                #print-button span,
+                #download-pdf-button span {
                     display: none;
                 }
             }
@@ -269,9 +313,13 @@ $linkCertificateCSS = '
                     margin: 5px auto;
                 }
 
-                #print-button {
+                #certificate-actions {
                     bottom: 10px;
                     right: 10px;
+                }
+
+                #print-button,
+                #download-pdf-button {
                     width: 50px;
                     height: 50px;
                 }
@@ -322,8 +370,8 @@ $linkCertificateCSS = '
                 page-break-before: always;
             }
 
-            /* OCULTAR BOTÓN AL IMPRIMIR */
-            #print-button {
+            /* OCULTAR BOTONES AL IMPRIMIR */
+            #certificate-actions {
                 display: none !important;
             }
         }
@@ -718,6 +766,10 @@ $laterContent .= $backContentHtml . '
 </table>';
 
 $template->assign('back_content', $laterContent);
+
+// PDF download setting
+$enablePdfDownload = api_get_plugin_setting('easycertificate', 'enable_pdf_download');
+$template->assign('enable_pdf_download', $enablePdfDownload === 'true');
 
 // Generate HTML
 $content = $template->fetch('easycertificate/template/certificate_html.tpl');

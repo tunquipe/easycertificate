@@ -98,3 +98,4 @@ $strings['CongratulationsDownloadYourCertificate'] = 'Felicidades, descarga tu c
 $strings['ExpirationSession'] = "Fecha de Expiración";
 $strings['ExpirationDateContractor'] = "Fecha de expiración para contratista";
 $strings['ExpirationDatePetroperu'] = "Fecha de expiración para Petroperu";
+$strings['enable_pdf_download'] = "Habilitar descarga de certificado en PDF";

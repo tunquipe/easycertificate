@@ -41,7 +41,8 @@ class EasyCertificatePlugin extends Plugin
             [
                 'enable_plugin_easycertificate' => 'boolean',
                 'percentage' => 'boolean',
-                'enable_plugin_congratulations' => 'boolean'
+                'enable_plugin_congratulations' => 'boolean',
+                'enable_pdf_download' => 'boolean'
 
             ]
         );
