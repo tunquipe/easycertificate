@@ -171,6 +171,21 @@ class EasyCertificatePlugin extends Plugin
 
             echo get_lang('MessageUpdate');
         }
+
+        $table = Database::get_main_table(self::TABLE_EASYCERTIFICATE);
+        $columnsToAdd = [
+            'approved_email_subject' => "ALTER TABLE $table ADD approved_email_subject VARCHAR(255) NULL",
+            'approved_email_content' => "ALTER TABLE $table ADD approved_email_content TEXT NULL",
+            'failed_email_subject' => "ALTER TABLE $table ADD failed_email_subject VARCHAR(255) NULL",
+            'failed_email_content' => "ALTER TABLE $table ADD failed_email_content TEXT NULL",
+        ];
+
+        foreach ($columnsToAdd as $column => $sql) {
+            $check = Database::query("SHOW COLUMNS FROM $table LIKE '$column'");
+            if (Database::num_rows($check) == 0) {
+                Database::query($sql);
+            }
+        }
     }
 
     /**
@@ -532,6 +547,218 @@ class EasyCertificatePlugin extends Plugin
         }
 
         return false;
+    }
+
+    /**
+     * Send results to all students.
+     * @param int $courseId
+     * @param int $sessionId
+     */
+    public function sendResultsToStudents($courseId, $sessionId)
+    {
+        $courseId = (int) $courseId;
+        $sessionId = (int) $sessionId;
+        $courseInfo = api_get_course_info_by_id($courseId);
+        $courseCode = $courseInfo['code'];
+        $accessUrlId = api_get_current_access_url_id();
+
+        $infoCertificate = self::getInfoCertificate($courseId, $sessionId, $accessUrlId);
+        if (empty($infoCertificate)) {
+            $infoCertificate = self::getInfoCertificateDefault($accessUrlId);
+        }
+
+        if (empty($infoCertificate)) {
+            return false;
+        }
+
+        $cats = Category::load(null, null, $courseCode, null, null, $sessionId);
+        if (empty($cats)) {
+            return false;
+        }
+        $category = $cats[0];
+        $catId = $category->get_id();
+
+        $userList = CourseManager::get_user_list_from_course_code($courseCode, $sessionId);
+        $totalApproved = 0;
+        $totalFailed = 0;
+
+        foreach ($userList as $userInfo) {
+            if ($userInfo['status'] == INVITEE) {
+                continue;
+            }
+
+            $userId = $userInfo['user_id'];
+            $isApproved = Category::userFinishedCourse($userId, $category, true);
+
+            if ($isApproved) {
+                // Generate certificate if not exists
+                Category::generateUserCertificate($catId, $userId);
+                $this->sendIndividualNotification($userId, $courseId, $sessionId, 'approved');
+                $totalApproved++;
+            } else {
+                $this->sendIndividualNotification($userId, $courseId, $sessionId, 'failed');
+                $totalFailed++;
+            }
+        }
+
+        return ['approved' => $totalApproved, 'failed' => $totalFailed];
+    }
+
+    /**
+     * Send individual notification to student.
+     * @param int $userId
+     * @param int $courseId
+     * @param int $sessionId
+     * @param string $status 'approved' or 'failed'
+     * @return bool
+     */
+    public function sendIndividualNotification($userId, $courseId, $sessionId = 0, $status = 'approved')
+    {
+        $userId = (int) $userId;
+        $courseId = (int) $courseId;
+        $sessionId = (int) $sessionId;
+        $accessUrlId = api_get_current_access_url_id();
+
+        $infoCertificate = self::getInfoCertificate($courseId, $sessionId, $accessUrlId);
+        if (empty($infoCertificate)) {
+            $infoCertificate = self::getInfoCertificateDefault($accessUrlId);
+        }
+
+        if (empty($infoCertificate)) {
+            return false;
+        }
+
+        $userInfo = api_get_user_info($userId);
+        if (empty($userInfo)) {
+            return false;
+        }
+        $courseInfo = api_get_course_info_by_id($courseId);
+        if (empty($courseInfo)) {
+            return false;
+        }
+
+        $category = Category::load(null, null, $courseInfo['code'], null, null, $sessionId);
+        if (empty($category[0])) {
+            return false;
+        }
+        $catId = (int)$category[0]->get_id();
+
+        if ($status === 'approved') {
+            $myCertificate = GradebookUtils::get_certificate_by_user_id($catId, $userId);
+            if (!empty($myCertificate) && is_array($myCertificate)) {
+                $subject = $this->parseEmailTags($infoCertificate['approved_email_subject'], $userInfo, $courseInfo, $myCertificate);
+                $content = $this->parseEmailTags($infoCertificate['approved_email_content'], $userInfo, $courseInfo, $myCertificate);
+                $fullHtml = $this->getEmailTemplate($content, $subject);
+                MessageManager::send_message($userId, $subject, $fullHtml);
+                return true;
+            }
+        } elseif ($status === 'failed') {
+            $subject = $this->parseEmailTags($infoCertificate['failed_email_subject'], $userInfo, $courseInfo, []);
+            $content = $this->parseEmailTags($infoCertificate['failed_email_content'], $userInfo, $courseInfo, []);
+            $fullHtml = $this->getEmailTemplate($content, $subject);
+            MessageManager::send_message($userId, $subject, $fullHtml);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Parse email tags.
+     * @param string $text
+     * @param array $userInfo
+     * @param array $courseInfo
+     * @param array $certificateInfo
+     * @return string
+     */
+    /**
+     * Parse email tags.
+     * @param string $text
+     * @param array $userInfo
+     * @param array $courseInfo
+     * @param array $certificateInfo
+     * @return string
+     */
+    public function parseEmailTags($text, $userInfo, $courseInfo, $certificateInfo = [])
+    {
+        $certificateLink = '';
+        $certificateLinkHtml = '';
+        if (!empty($certificateInfo)) {
+            $courseCode = isset($courseInfo['code']) ? $courseInfo['code'] : $courseInfo['course_code'];
+            $certificateLink = api_get_path(WEB_PATH).'certificates/index.php?id='.$certificateInfo['id'].'&user_id='.$userInfo['user_id'];
+            
+            // Add a direct link if possible (EasyCertificate specific)
+            $codeCert = self::getCodeCertificate($certificateInfo['cat_id'], $userInfo['user_id']);
+            if (!empty($codeCert)) {
+                $certificateLink = api_get_path(WEB_PLUGIN_PATH).'easycertificate/src/print_certificate.php?student_id='.$userInfo['user_id'].'&course_code='.$courseCode.'&session_id='.$certificateInfo['session_id'].'&cat_id='.$certificateInfo['cat_id'];
+            }
+
+            $btnText = $this->get_lang('DownloadCertificate');
+            $certificateLinkHtml = '<a href="'.$certificateLink.'" style="display: inline-block; padding: 12px 24px; background-color: #7c4dff; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: sans-serif; transition: background-color 0.3s;">'.$btnText.'</a>';
+        }
+
+        $tags = [
+            '((user_firstname))' => $userInfo['firstname'],
+            '((user_lastname))' => $userInfo['lastname'],
+            '((course_title))' => $courseInfo['title'],
+            '((certificate_link))' => $certificateLink,
+            '((certificate_link_html))' => $certificateLinkHtml,
+        ];
+
+        return str_replace(array_keys($tags), array_values($tags), $text);
+    }
+
+    /**
+     * Wraps content in a premium HTML email template.
+     * @param string $content
+     * @param string $title
+     * @return string
+     */
+    public function getEmailTemplate($content, $title = '')
+    {
+        $institution = api_get_setting('Institution');
+        $siteName = api_get_setting('siteName');
+        $logo = api_get_path(WEB_IMG_PATH).'logo.png';
+        
+        $html = '<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { margin: 0; padding: 0; background-color: #f4f7f9; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+                .wrapper { width: 100%; table-layout: fixed; background-color: #f4f7f9; padding-bottom: 40px; pt: 40px; }
+                .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; color: #4a4a4a; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+                .header { background: linear-gradient(135deg, #7c4dff 0%, #448aff 100%); padding: 30px; text-align: center; color: #ffffff; }
+                .header h1 { margin: 0; font-size: 24px; font-weight: 300; }
+                .content { padding: 40px 30px; line-height: 1.6; font-size: 16px; }
+                .footer { padding: 20px; text-align: center; color: #9b9b9b; font-size: 12px; }
+                .btn-container { text-align: center; margin-top: 30px; }
+            </style>
+        </head>
+        <body>
+            <div class="wrapper">
+                <table class="main" align="center">
+                    <tr>
+                        <td class="header">
+                            <h1>'.$siteName.'</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="content">
+                            '.$content.'
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="footer">
+                            &copy; '.date("Y").' '.$institution.' - '.$siteName.'
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </body>
+        </html>';
+
+        return $html;
     }
 
 }

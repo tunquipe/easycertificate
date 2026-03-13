@@ -136,7 +136,11 @@ if ($form->validate()) {
             'margin_bottom' => (int) $formValues['margin_bottom'],
             'certificate_default' => 0,
             'show_back' => (int) $formValues['show_back'],
-            'date_change' => (int) $formValues['date_change']
+            'date_change' => (int) $formValues['date_change'],
+            'approved_email_subject' => $formValues['approved_email_subject'],
+            'approved_email_content' => $formValues['approved_email_content'],
+            'failed_email_subject' => $formValues['failed_email_subject'],
+            'failed_email_content' => $formValues['failed_email_content'],
         ];
 
         if (intval($formValues['default_certificate'] == 1)) {
@@ -212,6 +216,19 @@ if (empty($infoCertificate)) {
     $useDefault = true;
 }
 
+if (empty($infoCertificate['approved_email_subject'])) {
+    $infoCertificate['approved_email_subject'] = $plugin->get_lang('NotificationCertificateSubject');
+}
+if (empty($infoCertificate['approved_email_content'])) {
+    $infoCertificate['approved_email_content'] = $plugin->get_lang('NotificationCertificateTemplate');
+}
+if (empty($infoCertificate['failed_email_subject'])) {
+    $infoCertificate['failed_email_subject'] = $plugin->get_lang('NotificationCertificateSubject');
+}
+if (empty($infoCertificate['failed_email_content'])) {
+    $infoCertificate['failed_email_content'] = $plugin->get_lang('NotificationFailedTemplate');
+}
+
 // Display the header
 $tpl = new Template($nameTools,true,true,false,false,true,false);
 
@@ -244,7 +261,7 @@ $form->addHeader($plugin->get_lang('FrontContentCertificate'));
 $dir = '/';
 $courseInfo = api_get_course_info();
 
-$isAllowedToEdit = api_is_allowed_to_edit(null, true);
+$isAllowedToEdit = api_is_allowed_to_edit(false, true);
 $isInCourse = !empty($courseInfo) && is_array($courseInfo);
 
 // Configurar rutas según el contexto
@@ -280,6 +297,9 @@ $html = '
     </li>
     <li role="presentation">
         <a href="#back" aria-controls="back" role="tab" data-toggle="tab">'.$plugin->get_lang('BackContent').'</a>
+    </li>
+    <li role="presentation">
+        <a href="#emails" aria-controls="emails" role="tab" data-toggle="tab">'.$plugin->get_lang('EmailNotifications').'</a>
     </li>
   </ul>
   <div class="tab-content">
@@ -322,8 +342,28 @@ $form->addHtmlEditor(
     true,
     $editorConfigTwo
 );
-$form->addHtml('</div></div>
-  </div>');
+$form->addHtml('</div></div>');
+$html = '
+    <div role="tabpanel" class="tab-pane" id="emails">
+        <div class="panel-body">
+            <p>'.$plugin->get_lang('EmailTagsHelp').'</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>'.$plugin->get_lang('ApprovedEmailSubject').'</h4>';
+$form->addHtml($html);
+$form->addText('approved_email_subject', '', false, ['cols-size' => [0, 12, 0]]);
+$form->addHtml('<h4>'.$plugin->get_lang('ApprovedEmailContent').'</h4>');
+$form->addHtmlEditor('approved_email_content', '', false, true, $editorConfigTwo);
+$form->addHtml('</div><div class="col-md-6">
+                    <h4>'.$plugin->get_lang('FailedEmailSubject').'</h4>');
+$form->addText('failed_email_subject', '', false, ['cols-size' => [0, 12, 0]]);
+$form->addHtml('<h4>'.$plugin->get_lang('FailedEmailContent').'</h4>');
+$form->addHtmlEditor('failed_email_content', '', false, true, $editorConfigTwo);
+$html = '</div></div>
+        </div>
+    </div>
+  </div>';
+$form->addHtml($html);
 
 $listTags = [
     'user_firstname',
@@ -348,7 +388,8 @@ $listTags = [
     'simple_average',
     'qr-code',
     'bar_code',
-    'score_number'
+    'score_number',
+    'certificate_link_html'
 ];
 
 $strInfo = '<ul class="list-tags">';
@@ -534,6 +575,20 @@ $form->addButton(
 
 $form->addElement('hidden', 'formSent');
 $infoCertificate['formSent'] = 1;
+
+if (empty($infoCertificate['approved_email_subject'])) {
+    $infoCertificate['approved_email_subject'] = $plugin->get_lang('ApprovedEmailSubjectDefault');
+}
+if (empty($infoCertificate['approved_email_content'])) {
+    $infoCertificate['approved_email_content'] = '<p>'.sprintf($plugin->get_lang('ApprovedEmailContentDefault'), '((user_firstname))', '((course_title))').'</p><div style="text-align:center;margin-top:20px;">((certificate_link_html))</div>';
+}
+if (empty($infoCertificate['failed_email_subject'])) {
+    $infoCertificate['failed_email_subject'] = $plugin->get_lang('FailedEmailSubjectDefault');
+}
+if (empty($infoCertificate['failed_email_content'])) {
+    $infoCertificate['failed_email_content'] = '<p>'.sprintf($plugin->get_lang('FailedEmailContentDefault'), '((user_firstname))', '((course_title))').'</p>';
+}
+
 $form->setDefaults($infoCertificate);
 $token = Security::get_token();
 $form->addElement('hidden', 'sec_token');

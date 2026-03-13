@@ -43,6 +43,10 @@ $certificateTable->addColumn('margin_bottom', Type::INTEGER, ['unsigned' => true
 $certificateTable->addColumn('certificate_default', Type::INTEGER, ['unsigned' => true]);
 $certificateTable->addColumn('show_back', Type::INTEGER, ['unsigned' => true]);
 $certificateTable->addColumn('date_change', Type::INTEGER, ['unsigned' => true]);
+$certificateTable->addColumn('approved_email_subject', Type::STRING, ['notnull' => false]);
+$certificateTable->addColumn('approved_email_content', Type::TEXT, ['notnull' => false]);
+$certificateTable->addColumn('failed_email_subject', Type::STRING, ['notnull' => false]);
+$certificateTable->addColumn('failed_email_content', Type::TEXT, ['notnull' => false]);
 $certificateTable->setPrimaryKey(['id']);
 
 $queries = $pluginSchema->toSql($platform);
