@@ -7,7 +7,7 @@
  */
 require_once __DIR__.'/config.php';
 
-if (PHP_SAPI !== 'cli' && !api_is_platform_admin()) {
+if (!api_is_platform_admin()) {
     die('You must have admin permissions to install plugins');
 }
 
