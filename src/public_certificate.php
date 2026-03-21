@@ -198,7 +198,7 @@ $params = [
 ];
 
 $pdf = new PDF($params['format'], $params['orientation'], $params);
-$pdf->content_to_pdf($htmlContent, '', $fileName, null, 'D', false, null, false, false, false);
+$pdf->content_to_pdf($htmlContent, '', $fileName, null, 'I', false, null, false, false, false);
 exit;
 
 function convertPercentageToScore($p): string
