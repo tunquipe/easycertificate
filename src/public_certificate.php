@@ -183,7 +183,7 @@ $template->assign('back_content', $laterContent);
 $htmlContent = $template->fetch('easycertificate/template/certificate.tpl');
 
 $currentLocalTime = api_get_local_time();
-$fileName = api_replace_dangerous_char('certificate_' . $courseCode . '_' . $userInfo['complete_name'] . '_' . $currentLocalTime);
+$fileName = api_replace_dangerous_char($userInfo['firstname'] . '_' . $userInfo['lastname'] . '_' . $courseInfo['title']);
 
 $pdfTitle = 'Certificado - ' . $userInfo['complete_name'] . ' - ' . $courseInfo['title'];
 
