@@ -300,6 +300,13 @@ $linkCertificateCSS = '
             box-sizing: border-box;
         }
 
+        /* El bloque del QR ocupa su espacio real en la celda (no absoluto), de
+           modo que la celda contigua con la vigencia no quede oculta tras él. */
+        .cert-page .cert-qr-block {
+            display: inline-block;
+            width: 110px;
+        }
+
         ::-webkit-scrollbar { width: 12px; height: 12px; }
         ::-webkit-scrollbar-track { background: #3a3a3a; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 6px; }
@@ -611,7 +618,7 @@ function buildCertificateContent(
         $certificateQR = EasyCertificatePlugin::getGenerateUrlImg($studentId, $codeCertificate['code_certificate_md5']);
 
         $qrCodeHtml = '
-<div style="position: absolute; bottom: 1cm; left: 1cm; z-index: 100;">
+<div class="cert-qr-block">
     <div style="font-family: Arial, sans-serif; font-size: 9pt; margin-bottom: 5px;">
         Código: ' . htmlspecialchars($proikosCertCorrelation) . '
     </div>
